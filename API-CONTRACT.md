@@ -52,4 +52,30 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
   - `discountAmount`: Số tiền giảm giá
   - `totalAmount`: Tổng cộng
 
-(Tiếp tục cập nhật thêm khi phát triển các module Auth, Host Dashboard, Admin Dashboard...)
+### 2.5. Authentication
+- `POST /api/v1/auth/register`: Đăng ký tài khoản (`email`, `password`, `role`). Trả về `accessToken` và thông tin user.
+- `POST /api/v1/auth/login`: Đăng nhập (`email`, `password`). Trả về `accessToken` và thông tin user.
+- `GET /api/v1/auth/me`: Lấy thông tin user hiện tại (Yêu cầu JWT).
+
+### 2.6. Master Data - Amenities
+- `GET /api/v1/amenities`: Lấy danh sách tiện ích.
+- `POST /api/v1/amenities`: Tạo tiện ích mới (Admin/Host). Payload: `{ name, icon }`.
+- `PATCH /api/v1/amenities/:id`: Cập nhật tiện ích (Admin/Host).
+- `DELETE /api/v1/amenities/:id`: Xóa tiện ích (Admin).
+
+### 2.7. Master Data - Hotels
+- `GET /api/v1/hotels`: Lấy danh sách tất cả khách sạn.
+- `GET /api/v1/hotels/:id`: Lấy chi tiết một khách sạn.
+- `GET /api/v1/hotels/my-hotels`: Lấy danh sách khách sạn của Host hiện tại (Yêu cầu JWT Host).
+- `POST /api/v1/hotels`: Tạo khách sạn mới (Yêu cầu JWT Host). Payload: `{ name, description, address, city, country, starRating, amenities: string[] }`.
+- `PATCH /api/v1/hotels/:id`: Cập nhật khách sạn (Chỉ Host sở hữu hoặc Admin).
+- `DELETE /api/v1/hotels/:id`: Xóa khách sạn (Chỉ Host sở hữu hoặc Admin).
+
+### 2.8. Master Data - Rooms
+- `GET /api/v1/hotels/:hotelId/rooms`: Lấy danh sách phòng của một khách sạn.
+- `GET /api/v1/rooms/:id`: Lấy chi tiết phòng.
+- `POST /api/v1/hotels/:hotelId/rooms`: Tạo phòng mới cho khách sạn (Chỉ Host sở hữu khách sạn). Payload: `{ name, type, basePrice, capacity, quantity, amenities: string[] }`.
+- `PATCH /api/v1/rooms/:id`: Cập nhật phòng (Chỉ Host sở hữu hoặc Admin).
+- `DELETE /api/v1/rooms/:id`: Xóa phòng (Chỉ Host sở hữu hoặc Admin).
+
+(Tiếp tục cập nhật thêm khi phát triển các module Analytics, Admin Dashboard...)

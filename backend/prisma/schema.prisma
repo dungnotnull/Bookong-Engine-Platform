@@ -1,0 +1,85 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+
+enum Role {
+  USER
+  HOST
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  hotels       Hotel[]
+}
+
+model Hotel {
+  id            String          @id @default(uuid())
+  hostId        String
+  host          User            @relation(fields: [hostId], references: [id])
+  name          String
+  description   String?
+  address       String
+  city          String
+  country       String
+  starRating    Float           @default(0)
+  searchVector  Unsupported("vector")?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  rooms         Room[]
+  hotelAmenities HotelAmenity[]
+}
+
+model Room {
+  id            String         @id @default(uuid())
+  hotelId       String
+  hotel         Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  name          String
+  type          String
+  basePrice     Float
+  capacity      Int
+  quantity      Int
+  searchVector  Unsupported("vector")?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  roomAmenities RoomAmenity[]
+}
+
+model Amenity {
+  id             String          @id @default(uuid())
+  name           String          @unique
+  icon           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  hotelAmenities HotelAmenity[]
+  roomAmenities  RoomAmenity[]
+}
+
+model HotelAmenity {
+  hotelId   String
+  amenityId String
+  hotel     Hotel   @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([hotelId, amenityId])
+}
+
+model RoomAmenity {
+  roomId    String
+  amenityId String
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, amenityId])
+}

@@ -4,48 +4,48 @@ Tài liệu này dùng ĐỂ THEO DÕI RIÊNG tiến độ thực hiện các ta
 AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`) hoặc Note lại chi tiết implementation ở đây sau khi làm xong 1 feature.
 
 ## Phase 1: Project Setup & Foundation
-- [ ] **1.1 Init Application**
-  - [ ] Khởi tạo NestJS project (`nest new backend`).
-  - [ ] Cấu hình ESLint, Prettier, `.editorconfig`, `.gitignore`.
-  - [ ] Setup `@nestjs/config` và load biến môi trường từ `.env`.
-- [ ] **1.2 Database & Database Tools Setup**
-  - [ ] Khởi tạo Prisma (`npx prisma init`) hoặc TypeORM.
-  - [ ] Setup Docker Compose chứa PostgreSQL và Redis (nếu phát triển local).
-  - [ ] Viết migration đầu tiên để kích hoạt extension pgvector (`CREATE EXTENSION IF NOT EXISTS vector;`).
-- [ ] **1.3 Core NestJS Configs**
-  - [ ] Cấu hình Global Validation Pipe, Global Exception Filter, và Response Transform Interceptor.
-  - [ ] Tích hợp Redis Client (sử dụng `ioredis` hoặc `@nestjs/cache-manager`).
-- [ ] **1.4 AI Vector Service (Python - Viết dưới dạng Microservice/API riêng)**
-  - [ ] Khởi tạo repo/thư mục python: `requirements.txt` (FastAPI, sentence-transformers).
-  - [ ] Viết script load model `AITeamVN/Vietnamese_Embedding_v2`.
-  - [ ] Expose API `POST /embed` nhận text, trả về vector array `[float]`.
-- [ ] **1.5 Authentication & Authorization**
-  - [ ] Define Schema Bảng `User` (id, email, password_hash, role: ADMIN/HOST/USER).
-  - [ ] Implement `AuthModule` (Tích hợp JWT, bcrypt).
-  - [ ] Viết Guards: `JwtAuthGuard` (verify token), `RolesGuard` (phân quyền).
-  - [ ] Tạo APIs: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`.
+- [x] **1.1 Init Application**
+  - [x] Khởi tạo NestJS project (`nest new backend`).
+  - [x] Cấu hình ESLint, Prettier, `.editorconfig`, `.gitignore`.
+  - [x] Setup `@nestjs/config` và load biến môi trường từ `.env`.
+- [x] **1.2 Database & Database Tools Setup**
+  - [x] Khởi tạo Prisma (`npx prisma init`) hoặc TypeORM.
+  - [x] Setup Docker Compose chứa PostgreSQL và Redis (nếu phát triển local).
+  - [x] Viết migration đầu tiên để kích hoạt extension pgvector (`CREATE EXTENSION IF NOT EXISTS vector;`).
+- [x] **1.3 Core NestJS Configs**
+  - [x] Cấu hình Global Validation Pipe, Global Exception Filter, và Response Transform Interceptor.
+  - [x] Tích hợp Redis Client (sử dụng `ioredis` hoặc `@nestjs/cache-manager`).
+- [x] **1.4 AI Vector Service (Python - Viết dưới dạng Microservice/API riêng)**
+  - [x] Khởi tạo repo/thư mục python: `requirements.txt` (FastAPI, sentence-transformers).
+  - [x] Viết script load model `AITeamVN/Vietnamese_Embedding_v2`.
+  - [x] Expose API `POST /embed` nhận text, trả về vector array `[float]`.
+- [x] **1.5 Authentication & Authorization**
+  - [x] Define Schema Bảng `User` (id, email, password_hash, role: ADMIN/HOST/USER).
+  - [x] Implement `AuthModule` (Tích hợp JWT, bcrypt).
+  - [x] Viết Guards: `JwtAuthGuard` (verify token), `RolesGuard` (phân quyền).
+  - [x] Tạo APIs: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`.
 
 ## Phase 2: Core Domain & DB Design (Users, Hotels, Rooms)
-- [ ] **2.1 Define Database Schema (Prisma/TypeORM)**
-  - [ ] Bảng `Hotel` (id, host_id, name, description, address, city, country, star_rating, search_vector).
-  - [ ] Bảng `Room` (id, hotel_id, name, type, base_price, capacity, quantity, search_vector).
-  - [ ] Bảng `Amenity` (id, name, icon) & Bảng trung gian `HotelAmenity`, `RoomAmenity`.
-- [ ] **2.2 Master Data CRUD APIs (Admin/Host/Public)**
+- [x] **2.1 Define Database Schema (Prisma/TypeORM)**
+  - [x] Bảng `Hotel` (id, host_id, name, description, address, city, country, star_rating, search_vector).
+  - [x] Bảng `Room` (id, hotel_id, name, type, base_price, capacity, quantity, search_vector).
+  - [x] Bảng `Amenity` (id, name, icon) & Bảng trung gian `HotelAmenity`, `RoomAmenity`.
+- [x] **2.2 Master Data CRUD APIs (Admin/Host/Public)**
   - [!] **CONSTRAINT**: Host chỉ được phép Create/Update/Delete các Hotel/Room có `host_id == current_user.id`.
-  - [ ] **Amenity APIs**: `GET /amenities`, `POST /amenities`, `PATCH /amenities/:id`, `DELETE /amenities/:id`.
-  - [ ] **Hotel APIs**: 
+  - [x] **Amenity APIs**: `GET /amenities`, `POST /amenities`, `PATCH /amenities/:id`, `DELETE /amenities/:id`.
+  - [x] **Hotel APIs**: 
     - `POST /hotels` (Host tạo).
     - `GET /hotels/my-hotels` (Host xem danh sách KS của mình).
     - `GET /hotels/:id` (Public xem chi tiết KS).
     - `PATCH /hotels/:id`, `DELETE /hotels/:id` (Host/Admin).
-  - [ ] **Room APIs**: 
+  - [x] **Room APIs**: 
     - `POST /hotels/:hotelId/rooms` (Host tạo phòng).
     - `GET /hotels/:hotelId/rooms` (Public xem danh sách phòng).
     - `GET /rooms/:id`, `PATCH /rooms/:id`, `DELETE /rooms/:id`.
-- [ ] **2.3 Vector Syncing Logic**
-  - [ ] Tích hợp `HttpModule` (Axios) gọi sang Python Service.
-  - [ ] Viết logic Service Observer/Interceptor: Khi Hotel hoặc Room được Create/Update, gộp `name + description + amenities` -> gọi Python API `/embed` lấy vector.
-  - [ ] Update cột `search_vector` trong PostgreSQL sử dụng raw query của `pgvector` (do các ORM thường chưa support native vector type).
+- [x] **2.3 Vector Syncing Logic**
+  - [x] Tích hợp `HttpModule` (Axios) gọi sang Python Service.
+  - [x] Viết logic Service Observer/Interceptor: Khi Hotel hoặc Room được Create/Update, gộp `name + description + amenities` -> gọi Python API `/embed` lấy vector.
+  - [x] Update cột `search_vector` trong PostgreSQL sử dụng raw query của `pgvector` (do các ORM thường chưa support native vector type).
 
 ## Phase 3: Search Engine & Availability Queries
 - [ ] **3.1 Define Schema Bookings & Inventory**
