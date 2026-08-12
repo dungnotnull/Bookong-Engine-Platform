@@ -1,5 +1,5 @@
 
-# 🏨 Bookong — Booking Engine Platform
+# 🏨 Bookong - Booking Engine Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NestJS](https://img.shields.io/badge/Backend-NestJS-E0234E?logo=nestjs)](https://nestjs.com/)
