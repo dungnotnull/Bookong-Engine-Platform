@@ -60,8 +60,6 @@
        │ gRPC / REST                                  │ SQL / Vector
        ▼                                              ▼
 
-```
-
 ┌──────────────────────┐                     ┌─────────────────────────┐
 │ Python AI Service    │                     │  PostgreSQL + pgvector  │
 │ (FastAPI + Embeddings)│                     │ (Relational Data & FTS) │
