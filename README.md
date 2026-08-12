@@ -45,9 +45,6 @@
 
 ## 🏗 System Architecture
 
-
-```
-
 ```
                    ┌─────────────────────────┐
                    │   Next.js 14 Web App    │
