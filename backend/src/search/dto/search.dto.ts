@@ -6,11 +6,13 @@ export class SearchQueryDto {
   @IsString()
   q?: string;
 
+  @IsOptional()
   @IsDateString()
-  checkIn!: string;
+  checkIn?: string;
 
+  @IsOptional()
   @IsDateString()
-  checkOut!: string;
+  checkOut?: string;
 
   @Type(() => Number)
   @IsNumber()

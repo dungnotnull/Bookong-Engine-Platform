@@ -50,7 +50,7 @@ export class SearchService {
           ${maxPriceFilter}
           AND (r.quantity - COALESCE(b.booked_count, 0)) > 0
       )
-      SELECT h.id as "hotelId", h.name as "hotelName", h.address, h.city, h.country, h."starRating",
+      SELECT h.id as "id", h.name as "name", h.address, h.city, h.country, h."starRating",
              ${vectorScore},
              json_agg(
                json_build_object(
@@ -68,8 +68,18 @@ export class SearchService {
       ${vectorFilter}
     `;
 
-    const checkInDate = new Date(checkIn).toISOString();
-    const checkOutDate = new Date(checkOut).toISOString();
+    const now = new Date();
+    const defaultCheckIn = new Date(now);
+    defaultCheckIn.setHours(14, 0, 0, 0);
+    const defaultCheckOut = new Date(now);
+    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
+    defaultCheckOut.setHours(12, 0, 0, 0);
+
+    const finalCheckIn = checkIn ? new Date(checkIn) : defaultCheckIn;
+    const finalCheckOut = checkOut ? new Date(checkOut) : defaultCheckOut;
+
+    const checkInDate = finalCheckIn.toISOString();
+    const checkOutDate = finalCheckOut.toISOString();
 
     const results = await this.prisma.$queryRawUnsafe(
       rawSql,

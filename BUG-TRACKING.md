@@ -28,6 +28,6 @@ Tài liệu này được sử dụng để toàn bộ team (Frontend, Backend, 
 | Status | ID | Component | Description | Severity | Assignee | Notes/Ngày Fix |
 | :---: | :--- | :--- | :--- | :---: | :--- | :--- |
 | [ ] | **BUG-001** | `Frontend` | Admin đăng nhập thành công nhưng bị redirect nhầm sang `/host/dashboard` thay vì `/admin/dashboard`. | 🟠 HIGH | Chưa có | ⭕ OPEN |
-| [ ] | **BUG-002** | `Backend` | API `GET /hotels/my-hotels` đôi khi trả về mảng rỗng nếu Host vừa đăng ký chưa kịp verify email. | 🟡 MEDIUM | Chưa có | ⭕ OPEN |
+| [x] | **BUG-002** | `Backend` | API `GET /hotels/my-hotels` đôi khi trả về mảng rỗng nếu Host vừa đăng ký chưa kịp verify email. | 🟡 MEDIUM | AI Agent | Đóng (Not a bug) - Trả về [] là chuẩn vì Host mới chưa tạo KS nào. |
 | [ ] | **BUG-003** | `Frontend` | Màn hình Host Dashboard (`/host/dashboard`) bị dính Navbar và Footer của Root Layout khiến giao diện không giống một màn hình độc lập. Cần cấu hình lại Layout Group hoặc ẩn đi. | 🟡 MEDIUM | `@Frontend-Team` | ⭕ OPEN |
 | [x] | **BUG-000** | `Database` | Prisma Schema thiếu các trường lưu trữ `images` và `coverImage` cho Khách sạn và Phòng. Dẫn đến không thể lưu link ảnh thực tế. | 🔴 CRITICAL | AI Agent | 13/08/2026 |
