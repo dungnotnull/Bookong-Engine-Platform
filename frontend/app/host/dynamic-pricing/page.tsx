@@ -1,23 +1,112 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, Save } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar as CalendarIcon, TrendingUp, Save, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/common/error-state';
+import { EmptyState } from '@/components/common/empty-state';
+import { Hotel } from '@/types/hotel';
+import { apiClient } from '@/lib/api-client';
 
 export default function HostDynamicPricingPage() {
-  const [selectedHotel, setSelectedHotel] = useState('hotel_1');
-  const [surgeMultiplier, setSurgeMultiplier] = useState(1.2); // 120% cho cuối tuần/lễ
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [selectedHotel, setSelectedHotel] = useState<string>('');
+  const [surgeMultiplier, setSurgeMultiplier] = useState(1.2);
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-05');
   const [ruleName, setRuleName] = useState('Phụ phí Mùa Lễ 2/9');
-  const [isSaved, setIsSaved] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleSaveRule = (e: React.FormEvent) => {
+  const fetchHostHotels = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res: any = await apiClient.get('/hotels/my-hotels');
+      const data = res?.data || res || [];
+      if (Array.isArray(data) && data.length > 0) {
+        setHotels(data);
+        setSelectedHotel(data[0].id);
+      } else {
+        setHotels([]);
+        setSelectedHotel('');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Không thể lấy danh sách khách sạn của bạn để cài đặt Dynamic Pricing.');
+      setHotels([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHostHotels();
+  }, [fetchHostHotels]);
+
+  const handleSaveRule = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    if (!selectedHotel) return;
+
+    setIsSaving(true);
+    setSuccessMessage('');
+    try {
+      await apiClient.post('/host/pricing-rules', {
+        hotelId: selectedHotel,
+        name: ruleName,
+        multiplier: surgeMultiplier,
+        startDate,
+        endDate,
+      });
+      setSuccessMessage('Đã lưu quy tắc Dynamic Pricing thành công!');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Lưu quy tắc giá thất bại. Vui lòng kiểm tra lại.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/2 rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-80 rounded-2xl" />
+          <Skeleton className="lg:col-span-2 h-80 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-8">
+        <ErrorState
+          title="Lỗi tải danh sách khách sạn"
+          message={error}
+          onRetry={fetchHostHotels}
+          isRetrying={isLoading}
+        />
+      </div>
+    );
+  }
+
+  if (hotels.length === 0) {
+    return (
+      <div className="py-8">
+        <EmptyState
+          icon={<Building2 className="w-8 h-8" />}
+          title="Bạn chưa có khách sạn nào"
+          description="Vui lòng tạo cơ sở lưu trú trước khi thiết lập quy tắc giá theo mùa/cuối tuần."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -40,8 +129,11 @@ export default function HostDynamicPricingPage() {
               onChange={(e) => setSelectedHotel(e.target.value)}
               className="px-3 py-2 text-xs font-bold border border-gray-300 rounded-lg outline-none"
             >
-              <option value="hotel_1">Phú Quốc Sunset Luxury Resort</option>
-              <option value="hotel_2">Đà Nẵng Ocean View Villa</option>
+              {hotels.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name} ({h.city})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -74,12 +166,12 @@ export default function HostDynamicPricingPage() {
             <span className="text-[11px] text-gray-500">Ví dụ: 1.2x tương đương tăng 20% so với giá base gốc.</span>
           </div>
 
-          <Button type="submit" variant="action" className="w-full font-bold gap-2 py-2.5">
+          <Button type="submit" variant="action" isLoading={isSaving} className="w-full font-bold gap-2 py-2.5">
             <Save className="w-4 h-4" /> Lưu Quy tắc Pricing
           </Button>
 
-          {isSaved && (
-            <p className="text-xs text-emerald-600 font-bold text-center">Đã lưu cấu hình Dynamic Pricing thành công!</p>
+          {successMessage && (
+            <p className="text-xs text-emerald-600 font-bold text-center">{successMessage}</p>
           )}
         </form>
 
@@ -93,7 +185,7 @@ export default function HostDynamicPricingPage() {
             <p className="font-bold text-booking-navy">Quy tắc đang áp dụng:</p>
             <div className="flex flex-wrap gap-2">
               <span className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 font-semibold text-gray-800">
-                Lễ 2/9 ({startDate} $\rightarrow$ {endDate}): <strong className="text-booking-blue">{surgeMultiplier}x</strong>
+                {ruleName} ({startDate} &rarr; {endDate}): <strong className="text-booking-blue">{surgeMultiplier}x</strong>
               </span>
               <span className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 font-semibold text-gray-800">
                 Cuối tuần T7 & CN: <strong className="text-booking-blue">1.15x</strong>

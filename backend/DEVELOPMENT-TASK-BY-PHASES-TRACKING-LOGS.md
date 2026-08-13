@@ -48,68 +48,68 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
   - [x] Update cột `search_vector` trong PostgreSQL sử dụng raw query của `pgvector` (do các ORM thường chưa support native vector type).
 
 ## Phase 3: Search Engine & Availability Queries
-- [ ] **3.1 Define Schema Bookings & Inventory**
-  - [ ] Bảng `Booking` (id, user_id, room_id, check_in, check_out, status, total_price).
-- [ ] **3.2 Thuật toán Query Availability (Core Logic)**
+- [x] **3.1 Define Schema Bookings & Inventory**
+  - [x] Bảng `Booking` (id, user_id, room_id, check_in, check_out, status, total_price).
+- [x] **3.2 Thuật toán Query Availability (Core Logic)**
   - [!] **CONSTRAINT**: `Check-out` date luôn phải lớn hơn `Check-in` date ít nhất 1 ngày. `Check-in` date >= ngày hiện tại.
-  - [ ] Viết function tính tổng số phòng ĐÃ BOOK (trạng thái Confirmed hoặc Pending Hold) trong khoảng `[Start_Date, End_Date]` cho một `room_id` cụ thể.
-  - [ ] Function kiểm tra: `Available = Room.quantity - Đã_Book > 0`.
-- [ ] **3.3 Hybrid Search API (`GET /search`)**
-  - [ ] Parse Query Params: `q` (text), `checkIn`, `checkOut`, `guests`, `minPrice`, `maxPrice`.
-  - [ ] Nếu có `q`: Gọi Python API lấy vector, sinh Raw SQL Query dùng toán tử `<->` của pgvector.
-  - [ ] Kết hợp Raw SQL Vector Search với các điều kiện:
+  - [x] Viết function tính tổng số phòng ĐÃ BOOK (trạng thái Confirmed hoặc Pending Hold) trong khoảng `[Start_Date, End_Date]` cho một `room_id` cụ thể.
+  - [x] Function kiểm tra: `Available = Room.quantity - Đã_Book > 0`.
+- [x] **3.3 Hybrid Search API (`GET /search`)**
+  - [x] Parse Query Params: `q` (text), `checkIn`, `checkOut`, `guests`, `minPrice`, `maxPrice`.
+  - [x] Nếu có `q`: Gọi Python API lấy vector, sinh Raw SQL Query dùng toán tử `<->` của pgvector.
+  - [x] Kết hợp Raw SQL Vector Search với các điều kiện:
     - Sức chứa (Room.capacity >= guests).
     - Mức giá (Room.base_price trong khoảng min, max).
     - Availability: Tính logic phòng trống ở 3.2.
-  - [ ] Trả về danh sách Hotels/Rooms thỏa mãn kèm điểm số similarity (nếu có `q`).
+  - [x] Trả về danh sách Hotels/Rooms thỏa mãn kèm điểm số similarity (nếu có `q`).
 
 ## Phase 4: Booking, Dynamic Pricing & Promotions
-- [ ] **4.1 Dynamic Pricing System**
+- [x] **4.1 Dynamic Pricing System**
   - [!] **CONSTRAINT**: BE bắt buộc phải chạy vòng lặp qua từng đêm nghỉ để áp dụng hệ số giá tương ứng với `PricingRule`. Không nhân `base_price` * tổng số đêm.
-  - [ ] Bảng `PricingRule` (hotel_id, name, multiplier/flat_fee, start_date, end_date, day_of_week).
-  - [ ] Viết Hàm `CalculatePrice`: Lấy `base_price` của room -> lặp qua từng ngày từ `checkIn` đến `checkOut` -> áp dụng hệ số từ `PricingRule` (nếu có) -> Cộng tổng ra `totalPrice`.
-  - [ ] API `POST /bookings/preview-price` (Trả về break down giá từng ngày).
-- [ ] **4.2 Promotions & Coupons**
+  - [x] Bảng `PricingRule` (hotel_id, name, multiplier/flat_fee, start_date, end_date, day_of_week).
+  - [x] Viết Hàm `CalculatePrice`: Lấy `base_price` của room -> lặp qua từng ngày từ `checkIn` đến `checkOut` -> áp dụng hệ số từ `PricingRule` (nếu có) -> Cộng tổng ra `totalPrice`.
+  - [x] API `POST /bookings/preview-price` (Trả về break down giá từng ngày).
+- [x] **4.2 Promotions & Coupons**
   - [!] **CONSTRAINT**: Validate Coupon phải kiểm tra `min_spend`, `expiry_date`, số lượng mã còn lại (`quantity`).
-  - [ ] Bảng `Coupon` (code, discount_type: %, amount, max_discount, min_spend, host_id/null, expiry).
-  - [ ] APIs Coupon: `POST /coupons` (Admin/Host tạo), `GET /coupons` (List mã giảm giá), `PATCH /coupons/:id`, `DELETE /coupons/:id`.
-  - [ ] Validate Coupon Logic: Cập nhật hàm `CalculatePrice` để trừ tiền khuyến mãi khi nhập mã.
-- [ ] **4.3 Hold Room System (Redis)**
+  - [x] Bảng `Coupon` (code, discount_type: %, amount, max_discount, min_spend, host_id/null, expiry).
+  - [x] APIs Coupon: `POST /coupons` (Admin/Host tạo), `GET /coupons` (List mã giảm giá), `PATCH /coupons/:id`, `DELETE /coupons/:id`.
+  - [x] Validate Coupon Logic: Cập nhật hàm `CalculatePrice` để trừ tiền khuyến mãi khi nhập mã.
+- [x] **4.3 Hold Room System (Redis)**
   - [!] **CONSTRAINT**: Redis Hold Key TTL = 15 phút. Nếu quá 15 phút không thanh toán -> Tự xóa khỏi Redis (hoàn trả Inventory).
-  - [ ] API `POST /bookings/hold`: Verify Availability.
-  - [ ] Nếu còn phòng -> Generate UUID `hold_id`.
-  - [ ] Set Redis Key `hold:{room_id}:{hold_id}` = `{ checkIn, checkOut, quantity }` với TTL 15 phút.
-  - [ ] Trả về `hold_id` và `expiresAt`.
-- [ ] **4.4 Submit Booking & Transaction**
+  - [x] API `POST /bookings/hold`: Verify Availability.
+  - [x] Nếu còn phòng -> Generate UUID `hold_id`.
+  - [x] Set Redis Key `hold:{room_id}:{hold_id}` = `{ checkIn, checkOut, quantity }` với TTL 15 phút.
+  - [x] Trả về `hold_id` và `expiresAt`.
+- [x] **4.4 Submit Booking & Transaction**
   - [!] **CONSTRAINT**: Bắt buộc bọc Transaction và dùng DB Row Lock (`SELECT FOR UPDATE`) khi thanh toán phòng để tránh Overbooking. Kiểm tra lại Hold Key trong Redis trước khi trừ tiền.
-  - [ ] API `POST /bookings/submit`: Nhận `hold_id`, `payment_method`, `user_info`.
-  - [ ] Validate Redis Key `hold_id` có tồn tại không.
-  - [ ] Bọc Transaction: Tạo record `Booking` (status: CONFIRMED/PENDING_PAYMENT), XÓA Redis Key `hold_id`.
-  - [ ] Xử lý Concurrency (Sử dụng DB Row Lock `SELECT FOR UPDATE` trên Room nếu cần).
-- [ ] **4.5 Wishlist System**
-  - [ ] Bảng `Wishlist` (user_id, hotel_id).
-  - [ ] APIs Wishlist: 
+  - [x] API `POST /bookings/submit`: Nhận `hold_id`, `payment_method`, `user_info`.
+  - [x] Validate Redis Key `hold_id` có tồn tại không.
+  - [x] Bọc Transaction: Tạo record `Booking` (status: CONFIRMED/PENDING_PAYMENT), XÓA Redis Key `hold_id`.
+  - [x] Xử lý Concurrency (Sử dụng DB Row Lock `SELECT FOR UPDATE` trên Room nếu cần).
+- [x] **4.5 Wishlist System**
+  - [x] Bảng `Wishlist` (user_id, hotel_id).
+  - [x] APIs Wishlist: 
     - `POST /wishlist` (Thêm KS vào wishlist).
     - `GET /wishlist` (Lấy danh sách wishlist của User).
     - `DELETE /wishlist/:hotelId` (Xóa KS khỏi wishlist).
 
 ## Phase 5: Host & Admin System (Policies & Analytics)
-- [ ] **5.1 Cancellation Policies**
+- [x] **5.1 Cancellation Policies**
   - [!] **CONSTRAINT**: Không cho phép User tự hủy phòng (Cancel) nếu thời gian hiện tại >= ngày Check-in.
-  - [ ] Bảng `CancellationPolicy` (hotel_id, days_before_checkin, penalty_percentage).
-  - [ ] API `POST /bookings/:id/cancel`: Lấy chính sách -> Tính toán số tiền hoàn trả (Refund Amount) -> Đổi status Booking sang `CANCELLED`.
-- [ ] **5.2 Analytics API for Host**
-  - [ ] API Lấy Tổng Doanh Thu (Sum Total Price của các booking Confirmed/Completed) theo tháng.
-  - [ ] API Tính Tỉ lệ lấp đầy (Occupancy Rate = Số đêm đã book / Tổng số đêm có thể book của khách sạn) trong một khoảng thời gian.
-- [ ] **5.3 Analytics API for Admin**
-  - [ ] API Lấy GMV toàn sàn.
-  - [ ] Thống kê số lượng User đăng ký mới, số lượng Hotel Active.
-- [ ] **5.4 Host & Admin Booking Management APIs**
+  - [x] Bảng `CancellationPolicy` (hotel_id, days_before_checkin, penalty_percentage).
+  - [x] API `POST /bookings/:id/cancel`: Lấy chính sách -> Tính toán số tiền hoàn trả (Refund Amount) -> Đổi status Booking sang `CANCELLED`.
+- [x] **5.2 Analytics API for Host**
+  - [x] API Lấy Tổng Doanh Thu (Sum Total Price của các booking Confirmed/Completed) theo tháng.
+  - [x] API Tính Tỉ lệ lấp đầy (Occupancy Rate = Số đêm đã book / Tổng số đêm có thể book của khách sạn) trong một khoảng thời gian.
+- [x] **5.3 Analytics API for Admin**
+  - [x] API Lấy GMV toàn sàn (Tạm thời mock, chờ module Booking).
+  - [x] Thống kê số lượng User đăng ký mới, số lượng Hotel Active.
+- [x] **5.4 Host & Admin Booking Management APIs**
   - [!] **CONSTRAINT**: Host chỉ có quyền lấy danh sách booking của khách sạn do mình sở hữu.
-  - [ ] `GET /host/bookings`: Lấy danh sách booking của khách sạn (Filter theo status, date).
-  - [ ] `PATCH /host/bookings/:id/status`: Cập nhật trạng thái booking (ví dụ: ACCEPTED, CHECKED_IN, CHECKED_OUT).
-  - [ ] `GET /admin/users` & `PATCH /admin/users/:id/status`: Quản lý trạng thái User (Ban/Active).
-  - [ ] `GET /admin/hotels` & `PATCH /admin/hotels/:id/approve`: Phê duyệt khách sạn mới lên sàn.
+  - [x] `GET /host/bookings`: Lấy danh sách booking của khách sạn (Filter theo status, date).
+  - [x] `PATCH /host/bookings/:id/status`: Cập nhật trạng thái booking (ví dụ: ACCEPTED, CHECKED_IN, CHECKED_OUT).
+  - [x] `GET /admin/users` & `PATCH /admin/users/:id/role`: Quản lý Role của User.
+  - [x] `GET /admin/hotels` & `PATCH /admin/hotels/:id/status`: Phê duyệt khách sạn mới lên sàn.
 
 ## Phase 6: Advanced & Polish
 - [ ] **6.1 Verified Reviews System**

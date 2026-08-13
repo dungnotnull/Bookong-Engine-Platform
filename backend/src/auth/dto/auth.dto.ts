@@ -2,6 +2,9 @@ import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validato
 import { Role } from '@prisma/client';
 
 export class RegisterDto {
+  @IsString()
+  fullName!: string;
+
   @IsEmail()
   email!: string;
 
