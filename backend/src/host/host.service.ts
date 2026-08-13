@@ -128,4 +128,74 @@ export class HostService {
       totalRoomNights
     };
   }
+
+  async getAggregateAnalytics(userId: string) {
+    // 1. Get all hotels owned by the host
+    const hotels = await this.prisma.hotel.findMany({
+      where: { hostId: userId },
+      select: { id: true }
+    });
+    const totalHotels = hotels.length;
+    const hotelIds = hotels.map(h => h.id);
+
+    if (totalHotels === 0) {
+      return { totalHotels: 0, totalRooms: 0, monthlyBookings: 0, occupancyRate: 0 };
+    }
+
+    // 2. Get total rooms
+    const rooms = await this.prisma.room.findMany({
+      where: { hotelId: { in: hotelIds } }
+    });
+    
+    let totalRooms = 0;
+    for (const room of rooms) {
+      totalRooms += room.quantity;
+    }
+
+    // 3. Get monthly bookings (current month)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const monthlyBookings = await this.prisma.booking.count({
+      where: {
+        room: { hotelId: { in: hotelIds } },
+        createdAt: { gte: startOfMonth, lte: endOfMonth }
+      }
+    });
+
+    // 4. Calculate rough occupancy rate for the current month
+    const totalDays = endOfMonth.getDate();
+    let totalRoomNights = totalRooms * totalDays;
+    
+    if (totalRoomNights === 0) {
+      return { totalHotels, totalRooms, monthlyBookings, occupancyRate: 0 };
+    }
+
+    const bookingsThisMonth = await this.prisma.booking.findMany({
+      where: {
+        room: { hotelId: { in: hotelIds } },
+        status: { in: ['CONFIRMED', 'COMPLETED', 'CHECKED_IN', 'CHECKED_OUT'] },
+        checkIn: { lt: endOfMonth },
+        checkOut: { gt: startOfMonth }
+      }
+    });
+
+    let bookedNights = 0;
+    for (const b of bookingsThisMonth) {
+      const start = b.checkIn > startOfMonth ? b.checkIn : startOfMonth;
+      const end = b.checkOut < endOfMonth ? b.checkOut : endOfMonth;
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      bookedNights += days;
+    }
+
+    const occupancyRate = (bookedNights / totalRoomNights) * 100;
+
+    return {
+      totalHotels,
+      totalRooms,
+      monthlyBookings,
+      occupancyRate: Math.round(occupancyRate * 100) / 100 // Round to 2 decimal places
+    };
+  }
 }

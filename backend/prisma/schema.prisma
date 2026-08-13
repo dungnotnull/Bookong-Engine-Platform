@@ -26,6 +26,7 @@ model User {
   passwordHash String
   fullName     String?
   role         Role     @default(USER)
+  isBanned     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   hotels       Hotel[]

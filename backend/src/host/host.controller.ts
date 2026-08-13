@@ -24,6 +24,12 @@ export class HostController {
     return { success: true, data: result };
   }
 
+  @Get('analytics')
+  async getAggregateAnalytics(@Request() req: any) {
+    const result = await this.hostService.getAggregateAnalytics(req.user.id);
+    return { success: true, data: result };
+  }
+
   @Get('analytics/revenue')
   async getRevenue(@Request() req: any, @Query() query: AnalyticsQueryDto) {
     const result = await this.hostService.getRevenue(req.user.id, query);

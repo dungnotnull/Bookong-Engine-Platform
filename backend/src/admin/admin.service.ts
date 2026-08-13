@@ -10,13 +10,13 @@ export class AdminService {
 
   async getDashboardStats() {
     const totalUsers = await this.prisma.user.count();
-    const pendingHotels = await this.prisma.hotel.count({ where: { status: 'PENDING' } });
+    const pendingHotelsCount = await this.prisma.hotel.count({ where: { status: 'PENDING' } });
     const totalHotels = await this.prisma.hotel.count();
     const totalRooms = await this.prisma.room.count();
 
     return {
       totalUsers,
-      pendingHotels,
+      pendingHotelsCount,
       totalHotels,
       totalRooms,
       totalGMV: 1250000000, // Mocked until Bookings module is implemented
@@ -34,6 +34,7 @@ export class AdminService {
           email: true,
           fullName: true,
           role: true,
+          isBanned: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -97,13 +98,54 @@ export class AdminService {
     };
   }
 
-  async updateHotelStatus(id: string, data: UpdateHotelStatusDto) {
+  async updateHotelStatus(id: string, status: HotelStatus) {
     const hotel = await this.prisma.hotel.findUnique({ where: { id } });
     if (!hotel) throw new NotFoundException('Hotel not found');
 
     return this.prisma.hotel.update({
       where: { id },
-      data: { status: data.status },
+      data: { status },
+    });
+  }
+
+  async updateUserStatus(id: string, isBanned: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isBanned },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isBanned: true,
+      }
+    });
+  }
+
+  async createAdmin(data: any) {
+    const bcrypt = require('bcrypt');
+    const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    if (existing) {
+      throw new Error('Email already in use');
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        passwordHash,
+        fullName: data.fullName || 'Admin',
+        role: 'ADMIN',
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+      }
     });
   }
 }
