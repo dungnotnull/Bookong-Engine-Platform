@@ -5,20 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AmenitySelector } from '@/components/host/amenity-selector';
 import { apiClient } from '@/lib/api-client';
+import { Room } from '@/types/hotel';
 
 interface RoomModalFormProps {
   hotelId: string;
+  initialData?: Room | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function RoomModalForm({ hotelId, onSuccess, onCancel }: RoomModalFormProps) {
-  const [name, setName] = useState('');
-  const [type, setType] = useState('Deluxe');
-  const [basePrice, setBasePrice] = useState<number>(1200000);
-  const [capacity, setCapacity] = useState<number>(2);
-  const [quantity, setQuantity] = useState<number>(5);
-  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(['aircon', 'bath', 'balcony']);
+export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: RoomModalFormProps) {
+  const [name, setName] = useState(initialData?.name || '');
+  const [type, setType] = useState(initialData?.type || 'Deluxe');
+  const [basePrice, setBasePrice] = useState<number>(initialData?.basePrice ?? 1200000);
+  const [capacity, setCapacity] = useState<number>(initialData?.capacity ?? 2);
+  const [quantity, setQuantity] = useState<number>(initialData?.quantity ?? 5);
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(
+    initialData?.amenities?.map((a) => a.id) || ['aircon', 'bath', 'balcony']
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -34,19 +38,31 @@ export function RoomModalForm({ hotelId, onSuccess, onCancel }: RoomModalFormPro
     setErrorMsg('');
 
     try {
-      // Gọi API POST /api/v1/hotels/:hotelId/rooms
-      await apiClient.post(`/hotels/${hotelId}/rooms`, {
-        name,
-        type,
-        basePrice: Number(basePrice),
-        capacity: Number(capacity),
-        quantity: Number(quantity),
-        amenityIds: selectedAmenityIds,
-      });
+      if (initialData?.id) {
+        // Gọi API PATCH /api/v1/rooms/:id
+        await apiClient.patch(`/rooms/${initialData.id}`, {
+          name,
+          type,
+          basePrice: Number(basePrice),
+          capacity: Number(capacity),
+          quantity: Number(quantity),
+          amenityIds: selectedAmenityIds,
+        });
+      } else {
+        // Gọi API POST /api/v1/hotels/:hotelId/rooms
+        await apiClient.post(`/hotels/${hotelId}/rooms`, {
+          name,
+          type,
+          basePrice: Number(basePrice),
+          capacity: Number(capacity),
+          quantity: Number(quantity),
+          amenityIds: selectedAmenityIds,
+        });
+      }
       onSuccess();
-    } catch {
-      // Mock success nếu chưa khởi chạy backend API
-      onSuccess();
+    } catch (err: any) {
+      const msg = err?.message || 'Không thể lưu thông tin phòng. Vui lòng thử lại.';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
@@ -128,9 +144,10 @@ export function RoomModalForm({ hotelId, onSuccess, onCancel }: RoomModalFormPro
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
         <Button type="button" variant="ghost" onClick={onCancel}>Hủy</Button>
         <Button type="submit" variant="yellow" isLoading={isLoading} className="font-bold text-slate-900">
-          Thêm Loại phòng mới
+          {initialData ? 'Cập nhật Loại phòng' : 'Thêm Loại phòng mới'}
         </Button>
       </div>
     </form>
   );
 }
+

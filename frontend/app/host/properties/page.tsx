@@ -119,11 +119,34 @@ export default function HostPropertiesPage() {
                   </div>
                 </div>
 
-                {/* Footer Action Card - Link Quản lý loại phòng (Fix BUG-010) */}
+                {/* Footer Action Card - Link Quản lý loại phòng */}
                 <div className="p-5 pt-0 flex items-center justify-between border-t border-gray-50 mt-4">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${hotel.isApproved ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
-                    {hotel.isApproved ? 'Đã duyệt (Active)' : 'Đang chờ duyệt'}
-                  </span>
+                  {(() => {
+                    const isApproved = hotel.status === 'APPROVED' || hotel.isApproved === true;
+                    const isRejected = hotel.status === 'REJECTED';
+                    if (isApproved) {
+                      return (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full text-emerald-700 bg-emerald-50 border border-emerald-200/60 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Đã duyệt (Active)
+                        </span>
+                      );
+                    }
+                    if (isRejected) {
+                      return (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full text-red-700 bg-red-50 border border-red-200/60 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                          Bị từ chối
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 bg-amber-50 border border-amber-200/60 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Đang chờ duyệt
+                      </span>
+                    );
+                  })()}
                   
                   {/* Nút Quản lý loại phòng có sự kiện onClick / Link sang /host/rooms */}
                   <Link href={`/host/rooms?hotelId=${hotel.id}`}>
