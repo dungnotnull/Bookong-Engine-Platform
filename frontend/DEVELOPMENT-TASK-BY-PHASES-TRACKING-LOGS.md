@@ -222,11 +222,7 @@ Tài liệu này theo dõi chi tiết toàn bộ các task phát triển ứng d
 | 2026-08-13 | Full 5/5 Bug Resolution | Xử lý BUG-003 (Ẩn Navbar/Footer cho /host & /admin) & BUG-004 (Upload File UI API /upload/image). Tất cả 5/5 bug đều tick [x] | AI Agent | 🟢 Completed | `type-check` (0 errors), `lint` (0 errors), `build` static generation 19/19 routes pass 100% |
 | 2026-08-13 | Frontend Pagination Implementation | Xây dựng component Pagination chuẩn Booking.com và tích hợp phân trang (page, limit) cho Search, Homepage, Bookings, Host Properties/Bookings, Admin Users/Approvals | AI Agent | 🟢 Completed | `type-check` (0 errors), `lint` (0 errors), `build` static generation 19/19 routes pass 100% |
 | 2026-08-13 | BUG-005 Resolution & Cookie Auth Sync | Đồng bộ token vào cookie trong useAuthStore giải quyết triệt để lỗi Host/Admin bị redirect về /login khi qua Middleware | AI Agent | 🟢 Completed | `type-check` (0 errors), `lint` (0 errors), `build` static generation 19/19 routes pass 100% |
-
-
-
-
-
+| 2026-08-13 | BUG-006 & BUG-007 Resolution | Thêm UI Form Tạo Admin mới (POST /admin/users), sửa endpoint Dynamic Pricing (/pricing-rules), đồng bộ 8/8 bug tick [x] | AI Agent | 🟢 Completed | `type-check` (0 errors), `lint` (0 errors), `git push` pass 100% |
 
 
 
