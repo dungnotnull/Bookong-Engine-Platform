@@ -33,8 +33,33 @@ export class RoomsService {
     return room;
   }
 
-  async findAllInHotel(hotelId: string) {
-    return this.prisma.room.findMany({ where: { hotelId } });
+  async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string) {
+    if (checkIn && checkOut) {
+      const checkInDate = new Date(checkIn).toISOString();
+      const checkOutDate = new Date(checkOut).toISOString();
+      const params = [hotelId, checkInDate, checkOutDate];
+      
+      const rawSql = `
+        SELECT r.*,
+               (r.quantity - COALESCE(b.booked_count, 0)) AS "availableQuantity"
+        FROM "Room" r
+        LEFT JOIN (
+          SELECT "roomId", COUNT(id) as booked_count
+          FROM "Booking"
+          WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
+            AND "checkIn" < $3::timestamp
+            AND "checkOut" > $2::timestamp
+          GROUP BY "roomId"
+        ) b ON r.id = b."roomId"
+        WHERE r."hotelId" = $1
+      `;
+      
+      const results = await this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params);
+      return results;
+    }
+
+    const rooms = await this.prisma.room.findMany({ where: { hotelId } });
+    return rooms.map(room => ({ ...room, availableQuantity: room.quantity }));
   }
 
   async findOne(id: string) {

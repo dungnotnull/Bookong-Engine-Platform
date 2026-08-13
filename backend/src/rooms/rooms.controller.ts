@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -17,8 +17,12 @@ export class RoomsController {
   }
 
   @Get('hotels/:hotelId/rooms')
-  findAllInHotel(@Param('hotelId') hotelId: string) {
-    return this.roomsService.findAllInHotel(hotelId);
+  findAllInHotel(
+    @Param('hotelId') hotelId: string,
+    @Query('checkIn') checkIn?: string,
+    @Query('checkOut') checkOut?: string
+  ) {
+    return this.roomsService.findAllInHotel(hotelId, checkIn, checkOut);
   }
 
   @Get('rooms/:id')

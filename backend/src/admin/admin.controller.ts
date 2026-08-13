@@ -20,8 +20,7 @@ export class AdminController {
 
   @Get('users')
   async getAllUsers(@Query() query: PaginationQueryDto) {
-    const users = await this.adminService.getAllUsers(query);
-    return { success: true, data: users };
+    return this.adminService.getAllUsers(query);
   }
 
   @Patch('users/:id/role')
@@ -47,8 +46,7 @@ export class AdminController {
 
   @Get('hotels')
   async getHotels(@Query() query: PaginationQueryDto & { status?: HotelStatus }) {
-    const hotels = await this.adminService.getHotels(query);
-    return { success: true, data: hotels };
+    return this.adminService.getHotels(query);
   }
 
   @Patch('hotels/:id/status')

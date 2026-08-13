@@ -15,8 +15,8 @@ export class UploadController {
     }
     
     // Return the public URL to access the uploaded file
-    // Assumes the app is running on localhost:3000 for local dev
-    const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
+    const port = process.env.PORT || 3000;
+    const fileUrl = `http://localhost:${port}/uploads/${file.filename}`;
     
     return {
       success: true,

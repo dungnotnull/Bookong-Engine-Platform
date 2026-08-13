@@ -8,12 +8,13 @@ Mỗi khi thao tác hoặc phát triển dự án Shopew, tất cả AI Agents B
 5. Thư mục Kỹ năng (`.agents/skills/`): Đọc và tuân thủ file `SKILL.md` của từng skill trước khi thực thi.
 
 ## Quy tắc thao tác
-- Code BE chỉ nằm trong `backend/`.
 - **Đọc Skills trước (Skills First):** Đọc kỹ các tài liệu `SKILL.md` trong `.agents/skills/` liên quan tới tác vụ trước khi triển khai.
 - Clean code (không comment-out code cũ, không console.log dư thừa).
 - 100% Comment bằng Tiếng Việt ngắn gọn, súc tích và đúng trọng tâm.
 - **Xác nhận trước khi Git Push:** CHỈ `git commit` mã nguồn cục bộ. Tuyệt đối KHÔNG `git push` lên remote nếu chưa có sự kiểm tra và đồng ý trực tiếp từ người dùng.
-- **Tách biệt Backend & Báo cáo Lỗi:** KHÔNG sửa đổi code trong `frontend/`. Nếu phát hiện lỗi hoặc thiếu API Backend, tổng hợp đầy đủ nguyên nhân & đề xuất để người dùng báo lại phía Backend.
+- **Phạm vi code:** Agent CHỈ ĐƯỢC code trong `backend/`, TUYỆT ĐỐI KHÔNG ĐƯỢC code trong `frontend/`.
+- **Xử lý lỗi Frontend:** Đối với các bug hoặc problem của frontend, PHẢI log vào file `d:\vibe-coding\Bookong-Engine-Platform\BUG-TRACKING.md`.
+- **Theo dõi tiến độ:** Khi implement các task trong `d:\vibe-coding\Bookong-Engine-Platform\backend\DEVELOPMENT-TASK-BY-PHASES-TRACKING-LOGS.md`, làm xong task nào phải đánh dấu hoàn thành, sau đó CẬP NHẬT thông tin vào file `d:\vibe-coding\Bookong-Engine-Platform\API-CONTRACT.md`.
 
 
 

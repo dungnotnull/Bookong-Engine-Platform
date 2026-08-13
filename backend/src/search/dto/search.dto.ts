@@ -8,6 +8,10 @@ export class SearchQueryDto extends PaginationQueryDto {
   q?: string;
 
   @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
   @IsDateString()
   checkIn?: string;
 
@@ -32,4 +36,14 @@ export class SearchQueryDto extends PaginationQueryDto {
   @IsNumber()
   @Min(0)
   maxPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  starRating?: number;
+
+  @IsOptional()
+  @IsString()
+  amenities?: string;
 }

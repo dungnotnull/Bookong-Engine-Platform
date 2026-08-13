@@ -14,8 +14,7 @@ export class HostController {
 
   @Get('bookings')
   async getBookings(@Request() req: any, @Query() query: PaginationQueryDto) {
-    const results = await this.hostService.getBookings(req.user.id, query);
-    return { success: true, data: results };
+    return this.hostService.getBookings(req.user.id, query);
   }
 
   @Patch('bookings/:id/status')
