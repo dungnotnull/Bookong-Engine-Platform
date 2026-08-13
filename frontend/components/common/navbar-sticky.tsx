@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Globe, Menu, User, LogOut } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { cn } from '@/lib/utils';
 
 export function NavbarSticky() {
+  const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -14,6 +16,10 @@ export function NavbarSticky() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  if (pathname.startsWith('/host') || pathname.startsWith('/admin')) {
+    return null;
+  }
 
   const displayName = user?.fullName || user?.email || 'User';
   const avatarInitial = displayName[0]?.toUpperCase() || 'U';

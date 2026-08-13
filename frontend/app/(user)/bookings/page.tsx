@@ -23,8 +23,13 @@ export default function UserBookingsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/bookings
-      const res: any = await apiClient.get('/bookings');
+      // Ưu tiên gọi API /bookings/my-trips theo API-CONTRACT.md mới nhất
+      let res: any;
+      try {
+        res = await apiClient.get('/bookings/my-trips');
+      } catch {
+        res = await apiClient.get('/bookings');
+      }
       const data = res?.data || res || [];
       if (Array.isArray(data)) {
         setBookings(data);
