@@ -3,7 +3,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role, HotelStatus } from '@prisma/client';
-import { UpdateHotelStatusDto, UpdateUserRoleDto, ApproveHotelDto, UpdateUserStatusDto, CreateAdminDto } from './dto/admin.dto';
+import { UpdateHotelStatusDto, UpdateUserRoleDto, ApproveHotelDto, UpdateUserStatusDto, CreateAdminDto, GetHotelsQueryDto } from './dto/admin.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,7 +45,7 @@ export class AdminController {
   }
 
   @Get('hotels')
-  async getHotels(@Query() query: PaginationQueryDto & { status?: HotelStatus }) {
+  async getHotels(@Query() query: GetHotelsQueryDto) {
     return this.adminService.getHotels(query);
   }
 
