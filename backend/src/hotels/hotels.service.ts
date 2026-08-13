@@ -12,13 +12,17 @@ export class HotelsService {
   ) {}
 
   async create(hostId: string, data: CreateHotelDto) {
-    const { amenities, ...hotelData } = data;
+    const { amenities, amenityIds, ...hotelData } = data;
+    const finalAmenities = amenities || amenityIds;
+    const country = hotelData.country || 'Việt Nam';
+    
     const hotel = await this.prisma.hotel.create({
       data: {
         ...hotelData,
+        country,
         hostId,
-        hotelAmenities: amenities ? {
-          create: amenities.map(id => ({ amenityId: id }))
+        hotelAmenities: finalAmenities ? {
+          create: finalAmenities.map(id => ({ amenityId: id }))
         } : undefined
       },
       include: { hotelAmenities: { include: { amenity: true } } }
@@ -86,15 +90,16 @@ export class HotelsService {
       throw new ForbiddenException('You can only update your own hotel');
     }
 
-    const { amenities, ...hotelData } = data;
+    const { amenities, amenityIds, ...hotelData } = data;
+    const finalAmenities = amenities || amenityIds;
     
     const updatedHotel = await this.prisma.hotel.update({
       where: { id },
       data: {
         ...hotelData,
-        hotelAmenities: amenities ? {
+        hotelAmenities: finalAmenities ? {
           deleteMany: {},
-          create: amenities.map(amId => ({ amenityId: amId }))
+          create: finalAmenities.map(amId => ({ amenityId: amId }))
         } : undefined
       },
       include: { hotelAmenities: { include: { amenity: true } } }
