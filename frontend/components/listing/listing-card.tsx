@@ -5,11 +5,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyListing } from '@/lib/dummy-data';
+import { Hotel } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
+export type ListingItemType = PropertyListing | Hotel;
+
 interface ListingCardProps {
-  listing: PropertyListing;
+  listing: ListingItemType;
   className?: string;
 }
 
@@ -17,9 +20,17 @@ export function ListingCard({ listing, className }: ListingCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
-  const images = listing.images && listing.images.length > 0
+  // Normalize data between PropertyListing and Hotel
+  const title = 'title' in listing ? listing.title : listing.name;
+  const location = 'location' in listing ? listing.location : `${listing.city || ''} ${listing.address ? `· ${listing.address}` : ''}`;
+  const rating = listing.rating || 9.0;
+  const price = 'pricePerNight' in listing 
+    ? listing.pricePerNight 
+    : (listing.rooms && listing.rooms.length > 0 ? listing.rooms[0].basePrice : 1500000);
+
+  const images = (listing.images && listing.images.length > 0)
     ? listing.images
-    : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop'];
+    : (('coverImage' in listing && listing.coverImage) ? [listing.coverImage] : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop']);
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,7 +57,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         <Link href={`/hotels/${listing.id}`} className="block h-full w-full">
           <Image
             src={images[currentImageIndex]}
-            alt={listing.title}
+            alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             className="object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
@@ -55,7 +66,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
 
         {/* Top Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
-          {listing.isGuestFavorite && (
+          {'isGuestFavorite' in listing && listing.isGuestFavorite && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 text-main shadow-md backdrop-blur-sm">
               Được khách yêu thích
             </span>
@@ -110,23 +121,22 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         )}
       </div>
 
-      {/* Listing Content Description (Airbnb Clean Style) */}
+      {/* Listing Content Description */}
       <div className="mt-3 flex flex-col gap-0.5">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-bold text-sm text-main line-clamp-1 group-hover:text-rausch transition-colors">
-            {listing.location}
+            {location}
           </h3>
           <div className="flex items-center gap-1 text-xs font-semibold text-main shrink-0">
             <Star className="w-3.5 h-3.5 fill-main text-main" />
-            <span>{listing.rating.toFixed(2)}</span>
+            <span>{typeof rating === 'number' ? rating.toFixed(1) : '9.0'}</span>
           </div>
         </div>
 
-        <p className="text-xs text-muted line-clamp-1">{listing.title}</p>
-        <p className="text-xs text-muted">{listing.datesAvailable}</p>
+        <p className="text-xs text-muted line-clamp-1">{title}</p>
 
         <div className="mt-1.5 flex items-baseline gap-1 text-xs text-main">
-          <span className="font-bold text-sm text-main">{formatCurrency(listing.pricePerNight)}</span>
+          <span className="font-bold text-sm text-main">{formatCurrency(price)}</span>
           <span className="text-muted font-normal">/ đêm</span>
         </div>
       </div>

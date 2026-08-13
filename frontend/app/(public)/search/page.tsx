@@ -1,90 +1,63 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { HeroSearchBar } from '@/components/search/hero-search-bar';
 import { FilterSidebar } from '@/components/search/filter-sidebar';
 import { PropertyCard } from '@/components/search/property-card';
+import { ErrorState } from '@/components/common/error-state';
+import { EmptyState } from '@/components/common/empty-state';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function SearchResultsPage() {
+function SearchResultsContent() {
+  const searchParams = useSearchParams();
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const mockSearchResults: Hotel[] = [
-    {
-      id: 'hotel_1',
-      hostId: 'host_1',
-      name: 'Phú Quốc Sunset Luxury Resort',
-      address: 'Đường Trần Hưng Đạo, Dương Đông',
-      city: 'Phú Quốc',
-      description: 'Resort sát biển sở hữu hồ bơi vô cực ngắm hoàng hôn cực đẹp tại đảo ngọc...',
-      rating: 9.2,
-      reviewCount: 142,
-      coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
-      images: [],
-      amenities: [],
-      rooms: [
-        {
-          id: 'room_1',
-          hotelId: 'hotel_1',
-          name: 'Deluxe Ocean View',
-          type: 'Deluxe',
-          basePrice: 1500000,
-          capacity: 2,
-          quantity: 5,
-          amenities: [],
-        },
-      ],
-    },
-    {
-      id: 'hotel_2',
-      hostId: 'host_2',
-      name: 'Đà Nẵng Ocean View Villa & Spa',
-      address: 'Võ Nguyên Giáp, Sơn Trà',
-      city: 'Đà Nẵng',
-      description: 'Biệt thự phong cách hiện đại thích hợp nghỉ dưỡng gia đình...',
-      rating: 8.9,
-      reviewCount: 96,
-      coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop',
-      images: [],
-      amenities: [],
-      rooms: [
-        {
-          id: 'room_2',
-          hotelId: 'hotel_2',
-          name: 'Executive Villa',
-          type: 'Suite',
-          basePrice: 2800000,
-          capacity: 4,
-          quantity: 2,
-          amenities: [],
-        },
-      ],
-    },
-  ];
+  const fetchSearch = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const q = searchParams.get('q') || searchParams.get('location') || '';
+      const checkIn = searchParams.get('checkIn') || '';
+      const checkOut = searchParams.get('checkOut') || '';
+      const guests = searchParams.get('guests') || '';
+      const minPrice = searchParams.get('minPrice') || '';
+      const maxPrice = searchParams.get('maxPrice') || '';
+      const amenities = searchParams.get('amenities') || '';
+
+      const params: Record<string, string> = {};
+      if (q) params.q = q;
+      if (checkIn) params.checkIn = checkIn;
+      if (checkOut) params.checkOut = checkOut;
+      if (guests) params.guests = guests;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+      if (amenities) params.amenities = amenities;
+
+      // Gọi API GET /api/v1/search
+      const res: any = await apiClient.get('/search', { params });
+      const data = res?.data || res || [];
+
+      if (Array.isArray(data)) {
+        setHotels(data);
+      } else {
+        setHotels([]);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Không thể tìm kiếm chỗ nghỉ. Vui lòng kiểm tra lại kết nối API Backend.');
+      setHotels([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
-    const fetchSearch = async () => {
-      setIsLoading(true);
-      try {
-        const res = await apiClient.get('/search');
-        const data = (res as any).data;
-        if (Array.isArray(data) && data.length > 0) {
-          setHotels(data);
-        } else {
-          setHotels(mockSearchResults);
-        }
-      } catch {
-        setHotels(mockSearchResults);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchSearch();
-  }, []);
+  }, [fetchSearch]);
 
   return (
     <div className="space-y-6 pb-16">
@@ -102,7 +75,7 @@ export default function SearchResultsPage() {
         <div className="flex-1 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-black text-gray-900">
-              Tìm thấy {hotels.length} chỗ nghỉ phù hợp
+              {isLoading ? 'Đang tìm kiếm chỗ nghỉ...' : `Tìm thấy ${hotels.length} chỗ nghỉ phù hợp`}
             </h1>
             <select className="text-xs font-bold border border-gray-300 rounded-lg px-3 py-1.5 bg-white text-gray-800">
               <option>Gợi ý hàng đầu</option>
@@ -117,6 +90,18 @@ export default function SearchResultsPage() {
               <Skeleton className="h-48 w-full rounded-2xl" />
               <Skeleton className="h-48 w-full rounded-2xl" />
             </div>
+          ) : error ? (
+            <ErrorState
+              title="Lỗi tải kết quả tìm kiếm"
+              message={error}
+              onRetry={fetchSearch}
+              isRetrying={isLoading}
+            />
+          ) : hotels.length === 0 ? (
+            <EmptyState
+              title="Không tìm thấy chỗ nghỉ phù hợp"
+              description="Thử thay đổi từ khóa tìm kiếm, khoảng ngày lưu trú hoặc bỏ bớt tiêu chí lọc."
+            />
           ) : (
             <div className="space-y-4">
               {hotels.map((hotel) => (
@@ -127,5 +112,20 @@ export default function SearchResultsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="booking-container py-12 space-y-4">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
+      }
+    >
+      <SearchResultsContent />
+    </Suspense>
   );
 }

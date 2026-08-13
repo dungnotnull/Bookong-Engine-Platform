@@ -1,11 +1,60 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Building2, BedDouble, CalendarCheck, TrendingUp, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/common/error-state';
+import { apiClient } from '@/lib/api-client';
+
+interface HostAnalytics {
+  totalHotels: number;
+  totalRooms: number;
+  monthlyBookings: number;
+  occupancyRate: number;
+}
 
 export default function HostDashboardPage() {
+  const [analytics, setAnalytics] = useState<HostAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAnalytics = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Gọi API GET /api/v1/host/analytics
+      const res: any = await apiClient.get('/host/analytics');
+      const data = res?.data || res;
+      if (data && typeof data === 'object') {
+        setAnalytics({
+          totalHotels: data.totalHotels ?? 0,
+          totalRooms: data.totalRooms ?? 0,
+          monthlyBookings: data.monthlyBookings ?? 0,
+          occupancyRate: data.occupancyRate ?? 0,
+        });
+      } else {
+        setAnalytics({
+          totalHotels: 0,
+          totalRooms: 0,
+          monthlyBookings: 0,
+          occupancyRate: 0,
+        });
+      }
+    } catch (err: any) {
+      // Nếu API endpoint chưa khởi tạo trên backend, ta catch và thông báo lỗi rõ ràng kèm nút Thử lại
+      setError(err?.message || 'Không thể lấy dữ liệu thống kê Host từ máy chủ.');
+      setAnalytics(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
   return (
     <div className="space-y-8">
       {/* Top Title & CTA */}
@@ -23,51 +72,67 @@ export default function HostDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500">Khách sạn đang quản lý</span>
-            <div className="p-2 bg-blue-50 text-booking-blue rounded-xl">
-              <Building2 className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-gray-900 mt-3">3</p>
-          <span className="text-[11px] text-emerald-600 font-semibold">Tất cả đã phê duyệt</span>
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Lỗi tải chỉ số thống kê"
+          message={error}
+          onRetry={fetchAnalytics}
+          isRetrying={isLoading}
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">Khách sạn đang quản lý</span>
+              <div className="p-2 bg-blue-50 text-booking-blue rounded-xl">
+                <Building2 className="w-5 h-5" />
+              </div>
+            </div>
+            <p className="text-2xl font-black text-gray-900 mt-3">{analytics?.totalHotels ?? 0}</p>
+            <span className="text-[11px] text-emerald-600 font-semibold">Cập nhật từ hệ thống</span>
+          </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500">Tổng số Loại phòng</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
-              <BedDouble className="w-5 h-5" />
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">Tổng số Loại phòng</span>
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                <BedDouble className="w-5 h-5" />
+              </div>
             </div>
+            <p className="text-2xl font-black text-gray-900 mt-3">{analytics?.totalRooms ?? 0}</p>
+            <span className="text-[11px] text-gray-500">Đang hoạt động trong kho</span>
           </div>
-          <p className="text-2xl font-black text-gray-900 mt-3">12</p>
-          <span className="text-[11px] text-gray-500">Sức chứa tối đa 48 khách</span>
-        </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500">Lượt đặt phòng tháng này</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CalendarCheck className="w-5 h-5" />
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">Lượt đặt phòng tháng này</span>
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
             </div>
+            <p className="text-2xl font-black text-gray-900 mt-3">{analytics?.monthlyBookings ?? 0}</p>
+            <span className="text-[11px] text-emerald-600 font-semibold">Tổng lượt đặt phòng</span>
           </div>
-          <p className="text-2xl font-black text-gray-900 mt-3">28</p>
-          <span className="text-[11px] text-emerald-600 font-semibold">↑ 18% so với tháng trước</span>
-        </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500">Tỉ lệ lấp đầy (Occupancy)</span>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-              <TrendingUp className="w-5 h-5" />
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-airbnb">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">Tỉ lệ lấp đầy (Occupancy)</span>
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                <TrendingUp className="w-5 h-5" />
+              </div>
             </div>
+            <p className="text-2xl font-black text-gray-900 mt-3">{analytics?.occupancyRate ?? 0}%</p>
+            <span className="text-[11px] text-purple-600 font-semibold">Tỉ lệ phòng lấp đầy</span>
           </div>
-          <p className="text-2xl font-black text-gray-900 mt-3">82%</p>
-          <span className="text-[11px] text-purple-600 font-semibold">Mức lấp đầy rất tốt</span>
         </div>
-      </div>
+      )}
 
       {/* Quick Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
