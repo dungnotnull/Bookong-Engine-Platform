@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, Home, User, ShieldCheck } from 'lucide-react';
@@ -11,13 +11,20 @@ import { Badge } from '@/components/ui/badge';
 export function HostHeader() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  const displayName = user?.fullName || user?.email || 'Host Manager';
+  const displayName = isMounted && user ? (user.fullName || user.email || 'Host Account') : 'Host Manager';
+  const displayEmail = isMounted && user ? (user.email || 'host@bookong.vn') : 'host@bookong.vn';
+  const avatarInitial = isMounted && user ? (displayName[0]?.toUpperCase() || 'H') : 'H';
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-gray-200 h-16 px-6 flex items-center justify-between shadow-xs">
@@ -45,14 +52,14 @@ export function HostHeader() {
 
         <div className="h-4 w-px bg-gray-200" />
 
-        {/* Host User Info */}
+        {/* Host User Info (Fix Hydration Mismatch for BUG-015) */}
         <div className="flex items-center gap-2 px-2 py-1 rounded-xl bg-gray-50 border border-gray-100">
           <div className="w-7 h-7 rounded-full bg-booking-navy text-white flex items-center justify-center text-xs font-black">
-            {displayName[0]?.toUpperCase() || <User className="w-3.5 h-3.5" />}
+            {avatarInitial}
           </div>
           <div className="hidden lg:block text-left pr-1">
             <p className="text-xs font-extrabold text-gray-900 leading-none">{displayName}</p>
-            <p className="text-[10px] text-gray-500 font-semibold">{user?.email}</p>
+            <p className="text-[10px] text-gray-500 font-semibold">{displayEmail}</p>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, Home, User, ShieldAlert } from 'lucide-react';
@@ -11,13 +11,20 @@ import { Badge } from '@/components/ui/badge';
 export function AdminHeader() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  const displayName = user?.fullName || user?.email || 'System Administrator';
+  const displayName = isMounted && user ? (user.fullName || user.email || 'Admin') : 'System Administrator';
+  const displayEmail = isMounted && user ? (user.email || 'admin@bookong.vn') : 'admin@bookong.vn';
+  const avatarInitial = isMounted && user ? (displayName[0]?.toUpperCase() || 'A') : 'S';
 
   return (
     <header className="sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 h-16 px-6 flex items-center justify-between shadow-sm">
@@ -44,14 +51,14 @@ export function AdminHeader() {
 
         <div className="h-4 w-px bg-slate-700" />
 
-        {/* Admin Info Badge */}
+        {/* Admin Info Badge (Fix Hydration Mismatch for BUG-015) */}
         <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-800 border border-slate-700">
           <div className="w-7 h-7 rounded-full bg-booking-yellow text-slate-900 flex items-center justify-center text-xs font-black">
-            {displayName[0]?.toUpperCase() || <User className="w-3.5 h-3.5" />}
+            {avatarInitial}
           </div>
           <div className="hidden lg:block text-left pr-1">
             <p className="text-xs font-extrabold text-white leading-none">{displayName}</p>
-            <p className="text-[10px] text-gray-400 font-semibold">{user?.email}</p>
+            <p className="text-[10px] text-gray-400 font-semibold">{displayEmail}</p>
           </div>
         </div>
 
