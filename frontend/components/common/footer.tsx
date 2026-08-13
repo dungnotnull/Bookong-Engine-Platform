@@ -1,7 +1,15 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Footer() {
+  const pathname = usePathname();
+
+  if (pathname.startsWith('/host') || pathname.startsWith('/admin')) {
+    return null;
+  }
   return (
     <footer className="bg-white border-t border-gray-200 mt-16 text-gray-600 text-xs">
       <div className="booking-container py-12">

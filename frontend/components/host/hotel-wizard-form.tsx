@@ -149,21 +149,51 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
       {/* Step 3: Images & Confirmation */}
       {step === 3 && (
         <div className="space-y-4">
-          <Input
-            label="URL Ảnh đại diện (Cover Image URL)"
-            placeholder="https://images.unsplash.com/photo-..."
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-700">Tải ảnh đại diện từ máy tính hoặc Nhập URL *</label>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    try {
+                      setIsLoading(true);
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      const res: any = await apiClient.post('/upload/image', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                      });
+                      const url = res?.data?.url || res?.url || URL.createObjectURL(file);
+                      setCoverImage(url);
+                    } catch {
+                      setCoverImage(URL.createObjectURL(file));
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }
+                }}
+                className="text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-booking-blue file:text-white hover:file:bg-blue-700 cursor-pointer"
+              />
+              <span className="text-xs font-bold text-gray-400">hoặc</span>
+              <Input
+                placeholder="https://..."
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+          </div>
 
           {coverImage && (
-            <div className="relative h-40 w-full rounded-xl overflow-hidden border border-gray-200">
+            <div className="relative h-44 w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={coverImage} alt="Preview" className="w-full h-full object-cover" />
             </div>
           )}
 
-          <div className="p-4 rounded-xl bg-gray-50 text-xs space-y-1">
+          <div className="p-4 rounded-xl bg-gray-50 text-xs space-y-1 border border-gray-200">
             <p className="font-bold text-gray-900">Tóm tắt Khách sạn:</p>
             <p><span className="font-medium text-gray-500">Tên:</span> {name}</p>
             <p><span className="font-medium text-gray-500">Vị trí:</span> {address}, {city}</p>
