@@ -87,6 +87,7 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 - `PATCH /api/v1/admin/hotels/:id/status`: Phê duyệt/Từ chối khách sạn (Payload: `{ status: "APPROVED" | "REJECTED" | "PENDING" }`).
 
 ### 2.9. Bookings & Pricing
+- `GET /api/v1/bookings/my-trips`: Lấy danh sách chuyến đi của User đang đăng nhập (Yêu cầu JWT).
 - `POST /api/v1/bookings/hold`: Giữ phòng (Payload: `{ roomId, checkIn, checkOut, guests }`). Trả về `{ holdId, expiresAt }`.
 - `POST /api/v1/bookings/calculate-price`: Tính giá tiền, áp dụng PricingRule và Coupon (Payload: `{ roomId, checkIn, checkOut, guests, discountCode }`).
 - `POST /api/v1/bookings`: Xác nhận đặt phòng (Payload: `{ holdId, paymentMethod, discountCode }`).

@@ -232,4 +232,20 @@ export class BookingsService {
       }
     });
   }
+
+  async getMyTrips(userId: string) {
+    return this.prisma.booking.findMany({
+      where: { userId },
+      include: {
+        room: {
+          include: {
+            hotel: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }

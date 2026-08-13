@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { HoldRoomDto, SubmitBookingDto, CalculatePriceDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,6 +10,13 @@ export class BookingsController {
   @Post('hold')
   async holdRoom(@Body() data: HoldRoomDto) {
     const result = await this.bookingsService.holdRoom(data);
+    return { success: true, data: result };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my-trips')
+  async getMyTrips(@Request() req: any) {
+    const result = await this.bookingsService.getMyTrips(req.user.userId);
     return { success: true, data: result };
   }
 

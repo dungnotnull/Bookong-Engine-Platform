@@ -92,6 +92,8 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
     - `POST /wishlist` (Thêm KS vào wishlist).
     - `GET /wishlist` (Lấy danh sách wishlist của User).
     - `DELETE /wishlist/:hotelId` (Xóa KS khỏi wishlist).
+- [x] **4.6 User Booking Management (My Trips)**
+  - [x] Xây dựng API `GET /bookings/my-trips` trả về toàn bộ booking của User đang đăng nhập.
 
 ## Phase 5: Host & Admin System (Policies & Analytics)
 - [x] **5.1 Cancellation Policies**
