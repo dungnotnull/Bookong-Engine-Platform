@@ -19,7 +19,7 @@ export class SearchService {
     let qFilter = '';
     const checkInDate = (checkIn ? new Date(checkIn) : new Date(new Date().setHours(14,0,0,0))).toISOString();
     const checkOutDate = (checkOut ? new Date(checkOut) : new Date(new Date().setDate(new Date().getDate() + 1))).toISOString();
-    const params: any[] = [checkInDate, checkOutDate, guests];
+    const params: any[] = [checkInDate, checkOutDate, guests || 1];
 
     if (q) {
       try {

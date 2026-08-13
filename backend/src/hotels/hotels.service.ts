@@ -79,8 +79,13 @@ export class HotelsService {
       this.prisma.hotel.count({ where: { hostId } })
     ]);
 
+    const mappedData = data.map(hotel => ({
+      ...hotel,
+      isApproved: hotel.status === 'APPROVED'
+    }));
+
     return {
-      data,
+      data: mappedData,
       meta: buildPaginationMeta(total, page, limit)
     };
   }

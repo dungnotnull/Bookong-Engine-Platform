@@ -15,10 +15,11 @@ export class SearchQueryDto extends PaginationQueryDto {
   @IsDateString()
   checkOut?: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  guests!: number;
+  guests?: number;
 
   @IsOptional()
   @Type(() => Number)
