@@ -92,22 +92,23 @@ export default function HostPropertiesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {hotels.map((hotel) => (
-              <div key={hotel.id} className="bg-white rounded-2xl border border-gray-100 shadow-airbnb overflow-hidden flex flex-col justify-between">
-                <div>
-                  <div className="relative h-48 w-full bg-gray-100">
-                    {hotel.coverImage ? (
-                      <Image src={hotel.coverImage} alt={hotel.name} fill className="object-cover" />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
-                        <Building2 className="w-12 h-12" />
+            {hotels.map((hotel) => {
+              const coverUrl =
+                hotel.coverImage && typeof hotel.coverImage === 'string' && !hotel.coverImage.startsWith('blob:')
+                  ? hotel.coverImage
+                  : (hotel.images && hotel.images.find((img) => img && typeof img === 'string' && !img.startsWith('blob:')))
+                  || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop';
+
+              return (
+                <div key={hotel.id} className="bg-white rounded-2xl border border-gray-100 shadow-airbnb overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="relative h-48 w-full bg-gray-100">
+                      <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                      <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
+                        {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
                       </div>
-                    )}
-                    <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
-                      {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
                     </div>
-                  </div>
 
                   <div className="p-5 space-y-2">
                     <h3 className="font-extrabold text-base text-gray-900">{hotel.name}</h3>
@@ -156,8 +157,9 @@ export default function HostPropertiesPage() {
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
           <Pagination
             page={page}

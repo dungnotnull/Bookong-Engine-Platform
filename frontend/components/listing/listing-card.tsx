@@ -29,9 +29,15 @@ export function ListingCard({ listing, className }: ListingCardProps) {
     ? listing.pricePerNight 
     : (listing.rooms && listing.rooms.length > 0 ? listing.rooms[0].basePrice : 1500000);
 
-  const images = (listing.images && listing.images.length > 0)
+  const rawImages = (listing.images && listing.images.length > 0)
     ? listing.images
-    : (('coverImage' in listing && listing.coverImage) ? [listing.coverImage] : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop']);
+    : (('coverImage' in listing && listing.coverImage) ? [listing.coverImage] : []);
+
+  const validImages = rawImages.filter((img) => img && typeof img === 'string' && !img.startsWith('blob:'));
+
+  const images = validImages.length > 0
+    ? validImages
+    : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop'];
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();

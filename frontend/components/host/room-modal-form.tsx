@@ -7,6 +7,8 @@ import { AmenitySelector } from '@/components/host/amenity-selector';
 import { apiClient } from '@/lib/api-client';
 import { Room } from '@/types/hotel';
 
+import { ImageUploadInput } from '@/components/common/image-upload-input';
+
 interface RoomModalFormProps {
   hotelId: string;
   initialData?: Room | null;
@@ -20,6 +22,7 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
   const [basePrice, setBasePrice] = useState<number>(initialData?.basePrice ?? 1200000);
   const [capacity, setCapacity] = useState<number>(initialData?.capacity ?? 2);
   const [quantity, setQuantity] = useState<number>(initialData?.quantity ?? 5);
+  const [imageUrl, setImageUrl] = useState<string>(initialData?.imageUrl || '');
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(
     initialData?.amenities?.map((a) => a.id) || ['aircon', 'bath', 'balcony']
   );
@@ -46,6 +49,7 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
           basePrice: Number(basePrice),
           capacity: Number(capacity),
           quantity: Number(quantity),
+          imageUrl,
           amenityIds: selectedAmenityIds,
         });
       } else {
@@ -56,6 +60,7 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
           basePrice: Number(basePrice),
           capacity: Number(capacity),
           quantity: Number(quantity),
+          imageUrl,
           amenityIds: selectedAmenityIds,
         });
       }
@@ -82,6 +87,12 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
+      />
+
+      <ImageUploadInput
+        label="Tải hình ảnh đại diện loại phòng từ máy tính"
+        value={imageUrl}
+        onChange={setImageUrl}
       />
 
       <div className="grid grid-cols-2 gap-4">

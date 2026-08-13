@@ -195,20 +195,20 @@ export default function AdminHotelsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs">
-                  {hotels.map((hotel) => (
-                    <tr key={hotel.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* Hotel Name & Cover */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-                            {hotel.coverImage ? (
-                              <Image src={hotel.coverImage} alt={hotel.name} fill className="object-cover" />
-                            ) : (
-                              <div className="flex items-center justify-center h-full text-gray-400">
-                                <Building2 className="w-6 h-6" />
-                              </div>
-                            )}
-                          </div>
+                  {hotels.map((hotel) => {
+                    const coverUrl =
+                      hotel.coverImage && typeof hotel.coverImage === 'string' && !hotel.coverImage.startsWith('blob:')
+                        ? hotel.coverImage
+                        : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop';
+
+                    return (
+                      <tr key={hotel.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* Hotel Name & Cover */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                              <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                            </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-sm text-slate-900">{hotel.name}</span>
@@ -313,8 +313,9 @@ export default function AdminHotelsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
+                  );
+                })}
+              </tbody>
               </table>
             </div>
           </div>
