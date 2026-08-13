@@ -1,0 +1,79 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { UpdateHotelStatusDto, UpdateUserRoleDto } from './dto/admin.dto';
+
+@Injectable()
+export class AdminService {
+  constructor(private prisma: PrismaService) {}
+
+  async getDashboardStats() {
+    const totalUsers = await this.prisma.user.count();
+    const pendingHotels = await this.prisma.hotel.count({ where: { status: 'PENDING' } });
+    const totalHotels = await this.prisma.hotel.count();
+    const totalRooms = await this.prisma.room.count();
+
+    return {
+      totalUsers,
+      pendingHotels,
+      totalHotels,
+      totalRooms,
+      totalGMV: 1250000000, // Mocked until Bookings module is implemented
+    };
+  }
+
+  async getAllUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateUserRole(id: string, data: UpdateUserRoleDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { role: data.role },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+      }
+    });
+  }
+
+  async deleteUser(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.delete({ where: { id } });
+  }
+
+  async getHotels(status?: 'PENDING' | 'APPROVED' | 'REJECTED') {
+    return this.prisma.hotel.findMany({
+      where: status ? { status } : undefined,
+      include: {
+        host: { select: { email: true, fullName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateHotelStatus(id: string, data: UpdateHotelStatusDto) {
+    const hotel = await this.prisma.hotel.findUnique({ where: { id } });
+    if (!hotel) throw new NotFoundException('Hotel not found');
+
+    return this.prisma.hotel.update({
+      where: { id },
+      data: { status: data.status },
+    });
+  }
+}

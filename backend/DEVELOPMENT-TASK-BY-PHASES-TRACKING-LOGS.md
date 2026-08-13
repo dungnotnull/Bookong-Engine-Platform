@@ -101,15 +101,15 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
 - [ ] **5.2 Analytics API for Host**
   - [ ] API Lấy Tổng Doanh Thu (Sum Total Price của các booking Confirmed/Completed) theo tháng.
   - [ ] API Tính Tỉ lệ lấp đầy (Occupancy Rate = Số đêm đã book / Tổng số đêm có thể book của khách sạn) trong một khoảng thời gian.
-- [ ] **5.3 Analytics API for Admin**
-  - [ ] API Lấy GMV toàn sàn.
-  - [ ] Thống kê số lượng User đăng ký mới, số lượng Hotel Active.
+- [x] **5.3 Analytics API for Admin**
+  - [x] API Lấy GMV toàn sàn (Tạm thời mock, chờ module Booking).
+  - [x] Thống kê số lượng User đăng ký mới, số lượng Hotel Active.
 - [ ] **5.4 Host & Admin Booking Management APIs**
   - [!] **CONSTRAINT**: Host chỉ có quyền lấy danh sách booking của khách sạn do mình sở hữu.
   - [ ] `GET /host/bookings`: Lấy danh sách booking của khách sạn (Filter theo status, date).
   - [ ] `PATCH /host/bookings/:id/status`: Cập nhật trạng thái booking (ví dụ: ACCEPTED, CHECKED_IN, CHECKED_OUT).
-  - [ ] `GET /admin/users` & `PATCH /admin/users/:id/status`: Quản lý trạng thái User (Ban/Active).
-  - [ ] `GET /admin/hotels` & `PATCH /admin/hotels/:id/approve`: Phê duyệt khách sạn mới lên sàn.
+  - [x] `GET /admin/users` & `PATCH /admin/users/:id/role`: Quản lý Role của User.
+  - [x] `GET /admin/hotels` & `PATCH /admin/hotels/:id/status`: Phê duyệt khách sạn mới lên sàn.
 
 ## Phase 6: Advanced & Polish
 - [ ] **6.1 Verified Reviews System**

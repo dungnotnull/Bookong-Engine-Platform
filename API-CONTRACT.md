@@ -78,4 +78,12 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 - `PATCH /api/v1/rooms/:id`: Cập nhật phòng (Chỉ Host sở hữu hoặc Admin).
 - `DELETE /api/v1/rooms/:id`: Xóa phòng (Chỉ Host sở hữu hoặc Admin).
 
-(Tiếp tục cập nhật thêm khi phát triển các module Analytics, Admin Dashboard...)
+### 2.9. Admin
+- `GET /api/v1/admin/dashboard/stats`: Thống kê tổng quan (`totalUsers`, `pendingHotels`, `totalHotels`, `totalRooms`, `totalGMV`).
+- `GET /api/v1/admin/users`: Lấy danh sách toàn bộ users.
+- `PATCH /api/v1/admin/users/:id/role`: Cập nhật role của user (Payload: `{ role: "USER" | "HOST" | "ADMIN" }`).
+- `DELETE /api/v1/admin/users/:id`: Xóa user.
+- `GET /api/v1/admin/hotels`: Lấy danh sách khách sạn (Query param: `?status=PENDING|APPROVED|REJECTED`).
+- `PATCH /api/v1/admin/hotels/:id/status`: Phê duyệt/Từ chối khách sạn (Payload: `{ status: "APPROVED" | "REJECTED" | "PENDING" }`).
+
+(Tiếp tục cập nhật thêm khi phát triển các module Analytics...)

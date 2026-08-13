@@ -14,10 +14,17 @@ enum Role {
   ADMIN
 }
 
+enum HotelStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
+  fullName     String?
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -34,6 +41,7 @@ model Hotel {
   city          String
   country       String
   starRating    Float           @default(0)
+  status        HotelStatus     @default(PENDING)
   searchVector  Unsupported("vector")?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt

@@ -26,6 +26,7 @@ export class UsersService {
       data: {
         email: data.email,
         passwordHash,
+        fullName: data.fullName,
         role: data.role || 'USER',
       },
     });

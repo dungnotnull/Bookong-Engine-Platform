@@ -28,7 +28,9 @@ export class HotelsService {
   }
 
   async findAll() {
-    return this.prisma.hotel.findMany();
+    return this.prisma.hotel.findMany({
+      where: { status: 'APPROVED' }
+    });
   }
 
   async findMyHotels(hostId: string) {

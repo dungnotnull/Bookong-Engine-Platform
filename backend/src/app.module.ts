@@ -10,6 +10,7 @@ import { AmenitiesModule } from './amenities/amenities.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { VectorModule } from './vector/vector.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { VectorModule } from './vector/vector.module';
     HotelsModule,
     RoomsModule,
     VectorModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
