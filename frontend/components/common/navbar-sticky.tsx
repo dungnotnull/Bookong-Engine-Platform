@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Globe, Menu, User, LogOut, Search } from 'lucide-react';
+import { Globe, Menu, User, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -30,16 +30,6 @@ export function NavbarSticky() {
         <Link href="/" className="flex items-center gap-2 text-rausch font-black text-2xl tracking-tighter">
           <span>bookong</span>
           <span className="w-2.5 h-2.5 rounded-full bg-rausch inline-block -ml-1" />
-        </Link>
-
-        {/* Center Pill Quick Search Trigger */}
-        <Link href="/search" className="hidden md:flex items-center gap-4 border border-border rounded-full py-2 px-4 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-xs font-bold text-main">
-          <span className="px-2 border-r border-border-light">Địa điểm bất kỳ</span>
-          <span className="px-2 border-r border-border-light">Tuần bất kỳ</span>
-          <span className="px-2 text-muted font-normal">Thêm khách</span>
-          <div className="bg-rausch p-2 rounded-full text-white">
-            <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-          </div>
         </Link>
 
         {/* Right Menu Utilities */}
