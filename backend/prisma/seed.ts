@@ -3,6 +3,9 @@ import { faker } from '@faker-js/faker';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
@@ -158,10 +161,20 @@ async function main() {
         quantity: 100,
       }
     });
+
+    // Add a Pricing Rule
+    await prisma.pricingRule.create({
+      data: {
+        hotelId: hotel.id,
+        name: 'Cuối tuần',
+        multiplier: 1.2, // Tăng 20%
+        dayOfWeek: 6, // Thứ 7
+      }
+    });
   }
 
-  console.log('Seeding Bookings...');
-  for (let i = 0; i < 30; i++) {
+  console.log('Seeding Bookings (50 records)...');
+  for (let i = 0; i < 50; i++) {
     const user = users[Math.floor(Math.random() * users.length)];
     const room = rooms[Math.floor(Math.random() * rooms.length)];
     const checkIn = faker.date.soon({ days: 10 });
@@ -179,6 +192,22 @@ async function main() {
         status: BookingStatus.CONFIRMED,
       }
     });
+  }
+
+  console.log('Seeding Wishlists...');
+  for (let i = 0; i < 20; i++) {
+    const user = users[Math.floor(Math.random() * users.length)];
+    const hotel = hotels[Math.floor(Math.random() * hotels.length)];
+    
+    // ignore if already exists
+    try {
+      await prisma.wishlist.create({
+        data: {
+          userId: user.id,
+          hotelId: hotel.id
+        }
+      });
+    } catch(e) {}
   }
 
   console.log('Seeding finished successfully!');
