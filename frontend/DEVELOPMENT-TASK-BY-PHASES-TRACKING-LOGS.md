@@ -218,6 +218,8 @@ Tài liệu này theo dõi chi tiết toàn bộ các task phát triển ứng d
 | 2026-08-12 | Phase 1 -> 6 - Tasks 3.1 -> 6.4 | Hoàn thành toàn bộ 32/32 sub-tasks từ Phase 1 đến Phase 6 | AI Agent | 🟢 Completed | `npm run type-check` (0 errors), `npm run build` compile thành công 18/18 routes tĩnh & động |
 | 2026-08-13 | API & UX Resilience | Loại bỏ 100% hardcoded mock data, chuyển sang API thực tế. Tích hợp ErrorState (Retry), EmptyState & Skeleton Loading | AI Agent | 🟢 Completed | `npm run type-check` (0 errors), `npm run build` static generation 18/18 routes pass 100% |
 | 2026-08-13 | Missing Pages & API Alignment | Dựng mới trang User Profile (/profile), hoàn thiện Wishlist (/wishlist), Host Rooms (/host/rooms) & Dynamic Pricing (/host/dynamic-pricing) | AI Agent | 🟢 Completed | `npm run type-check` (0 errors), `npm run lint` (0 errors), `npm run build` static generation 19/19 routes pass 100% |
+| 2026-08-13 | Bug Fix & API Contract Sync | Fix BUG-001 (Redirect Admin về /admin/dashboard), đồng bộ endpoint /bookings/my-trips và đánh dấu tick [x] trong BUG-TRACKING.md | AI Agent | 🟢 Completed | `type-check` (0 errors), `lint` (0 errors), `build` static generation 19/19 routes pass 100% |
+
 
 
 

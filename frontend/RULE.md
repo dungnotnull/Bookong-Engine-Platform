@@ -104,3 +104,21 @@ Một task Frontend chỉ được coi là hoàn thành khi đáp ứng đủ c�
 2. **Responsive Check**: Đã kiểm tra hiển thị mượt mà trên Mobile (375px), Tablet (768px), và Desktop (1440px+).
 3. **API Integration Test**: Kết nối API thành công với Backend hoặc trả về dữ liệu Mock khớp 100% schema `API-CONTRACT.md`.
 4. **Cập nhật Logs**: Đánh dấu `[x]` trong [DEVELOPMENT-TASK-BY-PHASES-TRACKING-LOGS.md](./DEVELOPMENT-TASK-BY-PHASES-TRACKING-LOGS.md) và ghi nhận vấn đề nảy sinh vào [ISSUES-LIST-TRACKING.md](./ISSUES-LIST-TRACKING.md).
+
+---
+
+## 🐞 7. QUY TRÌNH QUẢN LÝ THAY ĐỔI & BÁO LỖI (BUG TRACKING RULE)
+
+Khi có bất kỳ thay đổi, sự cố hoặc phát hiện lỗi (bug) nảy sinh trong quá trình phát triển và tích hợp:
+
+1. **Ghi nhận thông tin vào [BUG-TRACKING.md](../BUG-TRACKING.md)**:
+   * Ngay khi phát hiện bug hoặc có thay đổi phát sinh, BẮT BUỘC phải ghi nhận ngay một dòng mới vào bảng `DANH SÁCH BUG` tại file [BUG-TRACKING.md](../BUG-TRACKING.md).
+   * Ghi rõ: `STT`, `Mô tả lỗi`, `Mức độ nghiêm trọng (CRITICAL / HIGH / MEDIUM / LOW)`, `Phân loại / Người phụ trách`.
+
+2. **Phân loại & Quy trình Xử lý**:
+   * **Lỗi thuộc về Backend (BE)**: Ghi chi tiết thông tin lỗi, Endpoint/Payload và log vào [BUG-TRACKING.md](../BUG-TRACKING.md) để phía Backend nhận thông tin và xử lý.
+   * **Lỗi thuộc về Frontend (FE)**:
+     * Frontend Team / Agent sẽ trực tiếp kiểm tra, tìm nguyên nhân và thực hiện sửa lỗi.
+     * Chạy kiểm thử xác minh (`npm run type-check`, `npm run lint`, `npm run build`).
+     * Khi xử lý xong và test thành công, tiến hành **ĐÁNH DẤU TICK `[x]`** vào ô Status trong [BUG-TRACKING.md](../BUG-TRACKING.md) để toàn bộ team theo dõi tiến độ chính xác.
+

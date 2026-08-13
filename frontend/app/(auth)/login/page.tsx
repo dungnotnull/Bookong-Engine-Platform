@@ -41,7 +41,9 @@ export default function LoginPage() {
 
       if (token && user) {
         setAuth(token, user);
-        if (user.role === 'HOST' || user.role === 'ADMIN') {
+        if (user.role === 'ADMIN') {
+          router.push('/admin/dashboard');
+        } else if (user.role === 'HOST') {
           router.push('/host/dashboard');
         } else {
           router.push('/');
