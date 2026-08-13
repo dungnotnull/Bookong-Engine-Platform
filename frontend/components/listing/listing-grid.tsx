@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { PropertyListing } from '@/lib/dummy-data';
-import { ListingCard } from '@/components/listing/listing-card';
+import { ListingCard, ListingItemType } from '@/components/listing/listing-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/common/empty-state';
 
 interface ListingGridProps {
-  listings: PropertyListing[];
+  listings: ListingItemType[];
   isLoading?: boolean;
 }
 
@@ -27,9 +27,11 @@ export function ListingGrid({ listings, isLoading = false }: ListingGridProps) {
 
   if (listings.length === 0) {
     return (
-      <div className="airbnb-container py-16 text-center space-y-3">
-        <h3 className="text-lg font-bold text-main">Không tìm thấy chỗ nghỉ phù hợp</h3>
-        <p className="text-xs text-muted">Thử thay đổi bộ lọc hoặc chọn danh mục lưu trú khác.</p>
+      <div className="airbnb-container py-8">
+        <EmptyState
+          title="Không tìm thấy chỗ nghỉ phù hợp"
+          description="Hiện chưa có chỗ nghỉ nào khả dụng hoặc không có dữ liệu trả về từ hệ thống."
+        />
       </div>
     );
   }

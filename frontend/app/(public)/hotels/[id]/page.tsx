@@ -1,56 +1,86 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { MapPin, Star, Share2, Heart, Check, Wifi, Waves, Car, Wind } from 'lucide-react';
+import { MapPin, Star, Share2, Heart, Wifi, Waves, Car, Wind } from 'lucide-react';
 import { RoomSelectionTable } from '@/components/hotel-detail/room-selection-table';
+import { ErrorState } from '@/components/common/error-state';
+import { EmptyState } from '@/components/common/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Hotel } from '@/types/hotel';
+import { apiClient } from '@/lib/api-client';
 
 export default function HotelDetailPage({ params }: { params: { id: string } }) {
-  const [hotel] = useState<Hotel>({
-    id: params.id || 'hotel_1',
-    hostId: 'host_1',
-    name: 'Sunset Sanato Resort & Villa Phú Quốc',
-    address: 'Đường Trần Hưng Đạo, Dương Đông',
-    city: 'Phú Quốc',
-    description:
-      'Sunset Sanato Resort & Villa sở hữu vị trí đắc địa sát bờ biển Dương Đông với không gian thiết kế sang trọng, hồ bơi vô cực ngắm hoàng hôn đỉnh cao...',
-    rating: 9.2,
-    reviewCount: 142,
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
-    images: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop',
-    ],
-    amenities: [
-      { id: 'wifi', name: 'WiFi miễn phí', category: 'HOTEL' },
-      { id: 'pool', name: 'Hồ bơi vô cực', category: 'HOTEL' },
-      { id: 'parking', name: 'Bãi đỗ xe', category: 'HOTEL' },
-    ],
-    rooms: [
-      {
-        id: 'room_1',
-        hotelId: params.id,
-        name: 'Deluxe Ocean View Balcony',
-        type: 'Deluxe',
-        basePrice: 1500000,
-        capacity: 2,
-        quantity: 5,
-        amenities: [],
-      },
-      {
-        id: 'room_2',
-        hotelId: params.id,
-        name: 'Executive Ocean Villa Suite',
-        type: 'Suite',
-        basePrice: 2800000,
-        capacity: 4,
-        quantity: 2,
-        amenities: [],
-      },
-    ],
-  });
+  const [hotel, setHotel] = useState<Hotel | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHotel = useCallback(async () => {
+    if (!params.id) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Gọi API GET /api/v1/hotels/:id
+      const res: any = await apiClient.get(`/hotels/${params.id}`);
+      const data = res?.data || res;
+      if (data && typeof data === 'object' && data.id) {
+        setHotel(data);
+      } else {
+        setHotel(null);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Không thể tải thông tin chi tiết khách sạn. Vui lòng thử lại sau.');
+      setHotel(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchHotel();
+  }, [fetchHotel]);
+
+  if (isLoading) {
+    return (
+      <div className="booking-container py-8 space-y-6">
+        <Skeleton className="h-10 w-2/3 rounded-xl" />
+        <Skeleton className="h-4 w-1/3 rounded-md" />
+        <Skeleton className="h-80 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Skeleton className="md:col-span-2 h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="booking-container py-12">
+        <ErrorState
+          title="Không thể tải thông tin khách sạn"
+          message={error}
+          onRetry={fetchHotel}
+          isRetrying={isLoading}
+        />
+      </div>
+    );
+  }
+
+  if (!hotel) {
+    return (
+      <div className="booking-container py-12">
+        <EmptyState
+          title="Không tìm thấy thông tin khách sạn"
+          description="Khách sạn bạn đang tìm kiếm không tồn tại hoặc đã bị gỡ khỏi sàn."
+        />
+      </div>
+    );
+  }
+
+  const galleryImages = hotel.images && hotel.images.length > 0
+    ? hotel.images
+    : (hotel.coverImage ? [hotel.coverImage] : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop']);
 
   return (
     <div className="booking-container py-8 space-y-8">
@@ -82,17 +112,17 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
         </div>
       </div>
 
-      {/* Hero Photo Gallery Grid (Booking.com 3-Image Layout) */}
+      {/* Hero Photo Gallery Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-80 md:h-96 rounded-2xl overflow-hidden shadow-airbnb">
         <div className="md:col-span-2 relative h-full">
-          <Image src={hotel.images[0]} alt="Cover" fill className="object-cover" />
+          <Image src={galleryImages[0]} alt="Cover" fill className="object-cover" />
         </div>
         <div className="grid grid-rows-2 gap-3 h-full">
           <div className="relative h-full">
-            <Image src={hotel.images[1]} alt="Gallery 1" fill className="object-cover" />
+            <Image src={galleryImages[1] || galleryImages[0]} alt="Gallery 1" fill className="object-cover" />
           </div>
           <div className="relative h-full">
-            <Image src={hotel.images[2]} alt="Gallery 2" fill className="object-cover" />
+            <Image src={galleryImages[2] || galleryImages[0]} alt="Gallery 2" fill className="object-cover" />
           </div>
         </div>
       </div>
@@ -101,10 +131,12 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-4">
           <h3 className="text-lg font-bold text-gray-900">Giới thiệu chỗ nghỉ</h3>
-          <p className="text-xs text-gray-600 leading-relaxed">{hotel.description}</p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {hotel.description || 'Chưa có thông tin mô tả chi tiết về chỗ nghỉ này.'}
+          </p>
 
           <div className="space-y-2 pt-4">
-            <h4 className="text-xs font-bold text-gray-800">Các tiện nghi được ưa chuộng nhất:</h4>
+            <h4 className="text-xs font-bold text-gray-800">Các tiện nghi nổi bật:</h4>
             <div className="flex flex-wrap gap-3">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full">
                 <Wifi className="w-4 h-4 text-booking-blue" /> WiFi miễn phí
@@ -126,11 +158,11 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
         <div className="bg-blue-50/60 p-6 rounded-2xl border border-blue-100 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="font-bold text-sm text-booking-navy block">Tuyệt hảo</span>
-              <span className="text-xs text-gray-500">{hotel.reviewCount} đánh giá xác thực</span>
+              <span className="font-bold text-sm text-booking-navy block">Đánh giá chung</span>
+              <span className="text-xs text-gray-500">{hotel.reviewCount || 0} đánh giá xác thực</span>
             </div>
             <div className="bg-booking-navy text-white text-base font-black px-3 py-2 rounded-xl">
-              {hotel.rating}
+              {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
             </div>
           </div>
           <div className="border-t border-blue-100 pt-3 text-xs space-y-1.5 text-gray-700">

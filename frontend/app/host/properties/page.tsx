@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Plus, Building2, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { HotelWizardForm } from '@/components/host/hotel-wizard-form';
+import { ErrorState } from '@/components/common/error-state';
+import { EmptyState } from '@/components/common/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 
@@ -13,59 +16,31 @@ export default function HostPropertiesPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock dữ liệu ban đầu nếu chưa gọi API backend
-  const mockHotels: Hotel[] = [
-    {
-      id: 'hotel_1',
-      hostId: 'host_current',
-      name: 'Phú Quốc Sunset Luxury Resort',
-      address: 'Đường Trần Hưng Đạo, Dương Đông',
-      city: 'Phú Quốc',
-      description: 'Resort sát biển sở hữu hồ bơi vô cực ngắm hoàng hôn cực đẹp...',
-      rating: 9.2,
-      reviewCount: 142,
-      coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
-      images: [],
-      amenities: [],
-      isApproved: true,
-    },
-    {
-      id: 'hotel_2',
-      hostId: 'host_current',
-      name: 'Đà Nẵng Ocean View Villa',
-      address: 'Võ Nguyên Giáp, Sơn Trà',
-      city: 'Đà Nẵng',
-      description: 'Villa sang trọng phong cách hiện đại thích hợp cho gia đình...',
-      rating: 8.9,
-      reviewCount: 96,
-      coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop',
-      images: [],
-      amenities: [],
-      isApproved: true,
-    },
-  ];
-
-  const fetchHotels = async () => {
+  const fetchHotels = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await apiClient.get('/hotels/my-hotels');
-      const data = (res as any).data;
-      if (Array.isArray(data) && data.length > 0) {
+      // Gọi API GET /api/v1/hotels/my-hotels
+      const res: any = await apiClient.get('/hotels/my-hotels');
+      const data = res?.data || res || [];
+      if (Array.isArray(data)) {
         setHotels(data);
       } else {
-        setHotels(mockHotels);
+        setHotels([]);
       }
-    } catch {
-      setHotels(mockHotels);
+    } catch (err: any) {
+      setError(err?.message || 'Không thể tải danh sách khách sạn của bạn. Vui lòng kiểm tra quyền Host hoặc thử lại sau.');
+      setHotels([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHotels();
-  }, []);
+  }, [fetchHotels]);
 
   const handleCreatedSuccess = () => {
     setIsModalOpen(false);
@@ -89,9 +64,24 @@ export default function HostPropertiesPage() {
       {/* Hotel Property Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="h-64 bg-gray-200 animate-pulse rounded-2xl" />
-          <div className="h-64 bg-gray-200 animate-pulse rounded-2xl" />
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-64 rounded-2xl" />
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Lỗi tải danh sách khách sạn"
+          message={error}
+          onRetry={fetchHotels}
+          isRetrying={isLoading}
+        />
+      ) : hotels.length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="w-8 h-8" />}
+          title="Bạn chưa có khách sạn nào"
+          description="Bắt đầu mở rộng kinh doanh bằng cách đăng ký cơ sở lưu trú đầu tiên của bạn trên hệ thống Bookong."
+          actionLabel="Tạo khách sạn ngay"
+          onAction={() => setIsModalOpen(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {hotels.map((hotel) => (
@@ -107,7 +97,7 @@ export default function HostPropertiesPage() {
                   )}
                   <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
-                    {hotel.rating || 9.0}
+                    {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
                   </div>
                 </div>
 
@@ -117,13 +107,13 @@ export default function HostPropertiesPage() {
                     <MapPin className="w-3.5 h-3.5 text-booking-navy shrink-0" />
                     {hotel.address}, {hotel.city}
                   </p>
-                  <p className="text-xs text-gray-600 line-clamp-2 mt-2">{hotel.description}</p>
+                  <p className="text-xs text-gray-600 line-clamp-2 mt-2">{hotel.description || 'Chưa có mô tả'}</p>
                 </div>
               </div>
 
               <div className="p-5 pt-0 flex items-center justify-between border-t border-gray-50 mt-4">
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  Đã duyệt (Active)
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${hotel.isApproved ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
+                  {hotel.isApproved ? 'Đã duyệt (Active)' : 'Đang chờ duyệt'}
                 </span>
                 <Button variant="outline" size="sm" className="font-bold">
                   Quản lý loại phòng

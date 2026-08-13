@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: booking_db_2
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: booking_engine
+    ports:
+      - "15432:5432"
+    volumes:
+      - pgdata2:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: booking_redis_2
+    ports:
+      - "16379:6379"
+    restart: unless-stopped
+
+volumes:
+  pgdata2:
