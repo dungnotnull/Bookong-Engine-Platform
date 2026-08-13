@@ -10,6 +10,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
 
 export default function UserBookingsPage() {
@@ -19,30 +20,35 @@ export default function UserBookingsPage() {
   const [selectedBookingToCancel, setSelectedBookingToCancel] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 10;
+
   const fetchBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Ưu tiên gọi API /bookings/my-trips theo API-CONTRACT.md mới nhất
       let res: any;
       try {
-        res = await apiClient.get('/bookings/my-trips');
+        res = await apiClient.get('/bookings/my-trips', { params: { page, limit: LIMIT } });
       } catch {
-        res = await apiClient.get('/bookings');
+        res = await apiClient.get('/bookings', { params: { page, limit: LIMIT } });
       }
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        setBookings(data);
-      } else {
-        setBookings([]);
-      }
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
+
+      setBookings(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách đặt phòng. Vui lòng đăng nhập hoặc thử lại sau.');
       setBookings([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchBookings();
@@ -58,7 +64,6 @@ export default function UserBookingsPage() {
     if (!selectedBookingToCancel) return;
     setIsCancelling(true);
     try {
-      // Gọi API cancel
       await apiClient.post(`/bookings/${selectedBookingToCancel.id}/cancel`);
       setBookings((prev) =>
         prev.map((b) => (b.id === selectedBookingToCancel.id ? { ...b, status: 'CANCELLED' } : b))
@@ -96,48 +101,61 @@ export default function UserBookingsPage() {
           description="Khám phá ngay các chỗ nghỉ nghỉ dưỡng tuyệt vời trên Bookong và lên kế hoạch cho chuyến đi của bạn."
         />
       ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <div key={booking.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-airbnb flex flex-col md:flex-row justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-base text-booking-navy">{booking.hotelName || 'Khách sạn Bookong'}</span>
-                  <Badge variant={booking.status === 'CONFIRMED' ? 'green' : booking.status === 'CHECKED_OUT' ? 'navy' : 'orange'}>
-                    {booking.status}
-                  </Badge>
+        <>
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-airbnb flex flex-col md:flex-row justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-base text-booking-navy">{booking.hotelName || 'Khách sạn Bookong'}</span>
+                    <Badge variant={booking.status === 'CONFIRMED' ? 'green' : booking.status === 'CHECKED_OUT' ? 'navy' : 'orange'}>
+                      {booking.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-600">Mã đơn: <strong>{booking.code || booking.id}</strong> · Loại: {booking.roomName || 'Phòng nghỉ'}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-booking-navy" />
+                    {formatDateVi(booking.checkIn)} - {formatDateVi(booking.checkOut)} ({booking.guests} khách)
+                  </p>
                 </div>
-                <p className="text-xs text-gray-600">Mã đơn: <strong>{booking.code || booking.id}</strong> · Loại: {booking.roomName || 'Phòng nghỉ'}</p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-booking-navy" />
-                  {formatDateVi(booking.checkIn)} - {formatDateVi(booking.checkOut)} ({booking.guests} khách)
-                </p>
-              </div>
 
-              <div className="flex flex-col md:items-end justify-between gap-2 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0">
-                <span className="text-lg font-black text-booking-navy">{formatCurrency(booking.totalAmount)}</span>
-                
-                <div className="flex items-center gap-2">
-                  {booking.status === 'CHECKED_OUT' && (
-                    <Button variant="yellow" size="sm" className="font-bold text-slate-900">
-                      Viết Đánh giá
-                    </Button>
-                  )}
+                <div className="flex flex-col md:items-end justify-between gap-2 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0">
+                  <span className="text-lg font-black text-booking-navy">{formatCurrency(booking.totalAmount)}</span>
+                  
+                  <div className="flex items-center gap-2">
+                    {booking.status === 'CHECKED_OUT' && (
+                      <Button variant="yellow" size="sm" className="font-bold text-slate-900">
+                        Viết Đánh giá
+                      </Button>
+                    )}
 
-                  {booking.status === 'CONFIRMED' && (
-                    <Button
-                      variant={isCanCancel(booking) ? 'danger' : 'ghost'}
-                      size="sm"
-                      disabled={!isCanCancel(booking)}
-                      onClick={() => isCanCancel(booking) && setSelectedBookingToCancel(booking)}
-                    >
-                      {isCanCancel(booking) ? 'Hủy đặt phòng' : 'Không thể hủy'}
-                    </Button>
-                  )}
+                    {booking.status === 'CONFIRMED' && (
+                      <Button
+                        variant={isCanCancel(booking) ? 'danger' : 'ghost'}
+                        size="sm"
+                        disabled={!isCanCancel(booking)}
+                        onClick={() => isCanCancel(booking) && setSelectedBookingToCancel(booking)}
+                      >
+                        {isCanCancel(booking) ? 'Hủy đặt phòng' : 'Không thể hủy'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={totalItems}
+            limit={LIMIT}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </>
       )}
 
       {/* Modal Xác nhận Hủy phòng theo Chính sách */}

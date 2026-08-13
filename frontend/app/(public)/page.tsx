@@ -6,6 +6,7 @@ import { CategoryBar } from '@/components/listing/category-bar';
 import { ListingGrid } from '@/components/listing/listing-grid';
 import { FilterModal } from '@/components/search/filter-modal';
 import { ErrorState } from '@/components/common/error-state';
+import { Pagination } from '@/components/common/pagination';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 
@@ -17,25 +18,31 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 12;
+
   const fetchHotels = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API thực tế GET /api/v1/hotels từ Backend
-      const res: any = await apiClient.get('/hotels');
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        setHotels(data);
-      } else {
-        setHotels([]);
-      }
+      // Gọi API thực tế GET /api/v1/hotels kèm page & limit
+      const res: any = await apiClient.get('/hotels', { params: { page, limit: LIMIT } });
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
+
+      setHotels(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại backend.');
       setHotels([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchHotels();
@@ -66,9 +73,9 @@ export default function HomePage() {
       />
 
       {/* Main Listing Grid / Error State */}
-      <section>
+      <section className="airbnb-container">
         {error ? (
-          <div className="airbnb-container py-6">
+          <div className="py-6">
             <ErrorState
               title="Lỗi tải danh sách chỗ nghỉ"
               message={error}
@@ -77,7 +84,21 @@ export default function HomePage() {
             />
           </div>
         ) : (
-          <ListingGrid listings={hotels} isLoading={isLoading} />
+          <>
+            <ListingGrid listings={hotels} isLoading={isLoading} />
+            {!isLoading && hotels.length > 0 && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={totalItems}
+                limit={LIMIT}
+                onPageChange={(p) => {
+                  setPage(p);
+                  window.scrollTo({ top: 400, behavior: 'smooth' });
+                }}
+              />
+            )}
+          </>
         )}
       </section>
 

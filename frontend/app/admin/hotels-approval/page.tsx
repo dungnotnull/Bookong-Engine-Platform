@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
 
 interface PendingHotel {
@@ -21,25 +22,30 @@ export default function AdminHotelsApprovalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 10;
+
   const fetchPendingHotels = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/admin/hotels/pending
-      const res: any = await apiClient.get('/admin/hotels/pending');
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        setPendingHotels(data);
-      } else {
-        setPendingHotels([]);
-      }
+      const res: any = await apiClient.get('/admin/hotels/pending', { params: { page, limit: LIMIT } });
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
+
+      setPendingHotels(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách khách sạn chờ duyệt. Vui lòng kiểm tra quyền Admin.');
       setPendingHotels([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchPendingHotels();
@@ -80,41 +86,54 @@ export default function AdminHotelsApprovalPage() {
           description="Hiện tại tất cả bài đăng khách sạn đều đã được xử lý xong."
         />
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 font-bold text-gray-600 uppercase">
-                  <th className="p-4">Tên Khách sạn</th>
-                  <th className="p-4">Chủ nhà (Host)</th>
-                  <th className="p-4">Thành phố</th>
-                  <th className="p-4">Ngày đăng</th>
-                  <th className="p-4 text-right">Phê duyệt (Admin Action)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {pendingHotels.map((h) => (
-                  <tr key={h.id} className="hover:bg-gray-50/80">
-                    <td className="p-4 font-bold text-booking-navy flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-booking-blue" /> {h.name}
-                    </td>
-                    <td className="p-4 font-semibold text-gray-800">{h.hostName || 'Host'}</td>
-                    <td className="p-4 text-gray-600">{h.city}</td>
-                    <td className="p-4 text-gray-400">{h.createdAt ? h.createdAt.split('T')[0] : 'Vừa xong'}</td>
-                    <td className="p-4 text-right space-x-2">
-                      <Button size="sm" variant="action" onClick={() => handleApprove(h.id, true)} className="gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Chấp nhận (Approve)
-                      </Button>
-                      <Button size="sm" variant="danger" onClick={() => handleApprove(h.id, false)} className="gap-1">
-                        <XCircle className="w-3.5 h-3.5" /> Từ chối
-                      </Button>
-                    </td>
+        <>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 font-bold text-gray-600 uppercase">
+                    <th className="p-4">Tên Khách sạn</th>
+                    <th className="p-4">Chủ nhà (Host)</th>
+                    <th className="p-4">Thành phố</th>
+                    <th className="p-4">Ngày đăng</th>
+                    <th className="p-4 text-right">Phê duyệt (Admin Action)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {pendingHotels.map((h) => (
+                    <tr key={h.id} className="hover:bg-gray-50/80">
+                      <td className="p-4 font-bold text-booking-navy flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-booking-blue" /> {h.name}
+                      </td>
+                      <td className="p-4 font-semibold text-gray-800">{h.hostName || 'Host'}</td>
+                      <td className="p-4 text-gray-600">{h.city}</td>
+                      <td className="p-4 text-gray-400">{h.createdAt ? h.createdAt.split('T')[0] : 'Vừa xong'}</td>
+                      <td className="p-4 text-right space-x-2">
+                        <Button size="sm" variant="action" onClick={() => handleApprove(h.id, true)} className="gap-1">
+                          <CheckCircle className="w-3.5 h-3.5" /> Chấp nhận (Approve)
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => handleApprove(h.id, false)} className="gap-1">
+                          <XCircle className="w-3.5 h-3.5" /> Từ chối
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={totalItems}
+            limit={LIMIT}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </>
       )}
     </div>
   );

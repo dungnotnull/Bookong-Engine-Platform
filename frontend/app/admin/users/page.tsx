@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
 
 interface AdminUserItem {
@@ -24,25 +25,30 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 10;
+
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/admin/users
-      const res: any = await apiClient.get('/admin/users');
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        setUsers(data);
-      } else {
-        setUsers([]);
-      }
+      const res: any = await apiClient.get('/admin/users', { params: { page, limit: LIMIT } });
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
+
+      setUsers(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách tài khoản người dùng. Vui lòng kiểm tra quyền Admin.');
       setUsers([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchUsers();
@@ -84,44 +90,57 @@ export default function AdminUsersPage() {
           description="Hiện chưa có dữ liệu tài khoản trên hệ thống."
         />
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 font-bold text-gray-600 uppercase">
-                  <th className="p-4">Họ và tên</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Vai trò (Role)</th>
-                  <th className="p-4">Trạng thái</th>
-                  <th className="p-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50/80">
-                    <td className="p-4 font-bold text-gray-900">{u.fullName || u.name || 'Người dùng'}</td>
-                    <td className="p-4 text-gray-600">{u.email}</td>
-                    <td className="p-4">
-                      <Badge variant={u.role === 'HOST' ? 'yellow' : u.role === 'ADMIN' ? 'navy' : 'blue'}>
-                        {u.role}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant={u.isBanned ? 'orange' : 'green'}>
-                        {u.isBanned ? 'Đã bị khóa' : 'Hoạt động'}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-right">
-                      <Button size="sm" variant={u.isBanned ? 'action' : 'danger'} onClick={() => toggleBan(u.id, !!u.isBanned)}>
-                        {u.isBanned ? 'Mở khóa' : 'Khóa tài khoản'}
-                      </Button>
-                    </td>
+        <>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 font-bold text-gray-600 uppercase">
+                    <th className="p-4">Họ và tên</th>
+                    <th className="p-4">Email</th>
+                    <th className="p-4">Vai trò (Role)</th>
+                    <th className="p-4">Trạng thái</th>
+                    <th className="p-4 text-right">Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-gray-50/80">
+                      <td className="p-4 font-bold text-gray-900">{u.fullName || u.name || 'Người dùng'}</td>
+                      <td className="p-4 text-gray-600">{u.email}</td>
+                      <td className="p-4">
+                        <Badge variant={u.role === 'HOST' ? 'yellow' : u.role === 'ADMIN' ? 'navy' : 'blue'}>
+                          {u.role}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={u.isBanned ? 'orange' : 'green'}>
+                          {u.isBanned ? 'Đã bị khóa' : 'Hoạt động'}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right">
+                        <Button size="sm" variant={u.isBanned ? 'action' : 'danger'} onClick={() => toggleBan(u.id, !!u.isBanned)}>
+                          {u.isBanned ? 'Mở khóa' : 'Khóa tài khoản'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={totalItems}
+            limit={LIMIT}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </>
       )}
     </div>
   );

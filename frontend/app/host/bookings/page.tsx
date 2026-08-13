@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
 
 interface HostBookingItem {
@@ -26,25 +27,30 @@ export default function HostBookingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 10;
+
   const fetchHostBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/host/bookings
-      const res: any = await apiClient.get('/host/bookings');
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        setHostBookings(data);
-      } else {
-        setHostBookings([]);
-      }
+      const res: any = await apiClient.get('/host/bookings', { params: { page, limit: LIMIT } });
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
+
+      setHostBookings(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách đơn đặt phòng của Host. Vui lòng kiểm tra quyền truy cập.');
       setHostBookings([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     fetchHostBookings();
@@ -87,53 +93,66 @@ export default function HostBookingsPage() {
           description="Hiện tại khách sạn của bạn chưa phát sinh đơn đặt phòng nào mới."
         />
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-600 uppercase">
-                  <th className="p-4">Mã đơn</th>
-                  <th className="p-4">Tên Khách hàng</th>
-                  <th className="p-4">Loại phòng</th>
-                  <th className="p-4">Thời gian ở</th>
-                  <th className="p-4">Tổng tiền</th>
-                  <th className="p-4">Trạng thái</th>
-                  <th className="p-4 text-right">Đổi trạng thái (Host Action)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {hostBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-gray-50/80">
-                    <td className="p-4 font-bold text-booking-navy">{b.code || b.id}</td>
-                    <td className="p-4 font-bold text-gray-900">{b.customerName || 'Khách vãng lai'}</td>
-                    <td className="p-4 text-gray-700">{b.roomName || 'Phòng tiêu chuẩn'}</td>
-                    <td className="p-4 text-gray-500">
-                      {formatDateVi(b.checkIn)} - {formatDateVi(b.checkOut)}
-                    </td>
-                    <td className="p-4 font-black text-booking-navy">{formatCurrency(b.amount || 0)}</td>
-                    <td className="p-4">
-                      <Badge variant={b.status === 'CONFIRMED' ? 'blue' : b.status === 'CHECKED_OUT' ? 'navy' : 'green'}>
-                        {b.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-right space-x-2">
-                      {b.status === 'CONFIRMED' && (
-                        <Button size="sm" variant="action" onClick={() => updateStatus(b.id, 'CHECKED_IN')}>
-                          Nhận phòng (Check-in)
-                        </Button>
-                      )}
-                      {b.status === 'CHECKED_IN' && (
-                        <Button size="sm" variant="yellow" className="font-bold text-slate-900" onClick={() => updateStatus(b.id, 'CHECKED_OUT')}>
-                          Trả phòng (Check-out)
-                        </Button>
-                      )}
-                    </td>
+        <>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-[11px] font-bold text-gray-600 uppercase">
+                    <th className="p-4">Mã đơn</th>
+                    <th className="p-4">Tên Khách hàng</th>
+                    <th className="p-4">Loại phòng</th>
+                    <th className="p-4">Thời gian ở</th>
+                    <th className="p-4">Tổng tiền</th>
+                    <th className="p-4">Trạng thái</th>
+                    <th className="p-4 text-right">Đổi trạng thái (Host Action)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {hostBookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-gray-50/80">
+                      <td className="p-4 font-bold text-booking-navy">{b.code || b.id}</td>
+                      <td className="p-4 font-bold text-gray-900">{b.customerName || 'Khách vãng lai'}</td>
+                      <td className="p-4 text-gray-700">{b.roomName || 'Phòng tiêu chuẩn'}</td>
+                      <td className="p-4 text-gray-500">
+                        {formatDateVi(b.checkIn)} - {formatDateVi(b.checkOut)}
+                      </td>
+                      <td className="p-4 font-black text-booking-navy">{formatCurrency(b.amount || 0)}</td>
+                      <td className="p-4">
+                        <Badge variant={b.status === 'CONFIRMED' ? 'blue' : b.status === 'CHECKED_OUT' ? 'navy' : 'green'}>
+                          {b.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        {b.status === 'CONFIRMED' && (
+                          <Button size="sm" variant="action" onClick={() => updateStatus(b.id, 'CHECKED_IN')}>
+                            Nhận phòng (Check-in)
+                          </Button>
+                        )}
+                        {b.status === 'CHECKED_IN' && (
+                          <Button size="sm" variant="yellow" className="font-bold text-slate-900" onClick={() => updateStatus(b.id, 'CHECKED_OUT')}>
+                            Trả phòng (Check-out)
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={totalItems}
+            limit={LIMIT}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { FilterSidebar } from '@/components/search/filter-sidebar';
 import { PropertyCard } from '@/components/search/property-card';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +17,12 @@ function SearchResultsContent() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const LIMIT = 10;
 
   const fetchSearch = useCallback(async () => {
     setIsLoading(true);
@@ -29,7 +36,7 @@ function SearchResultsContent() {
       const maxPrice = searchParams.get('maxPrice') || '';
       const amenities = searchParams.get('amenities') || '';
 
-      const params: Record<string, string> = {};
+      const params: Record<string, any> = { page, limit: LIMIT };
       if (q) params.q = q;
       if (checkIn) params.checkIn = checkIn;
       if (checkOut) params.checkOut = checkOut;
@@ -38,22 +45,21 @@ function SearchResultsContent() {
       if (maxPrice) params.maxPrice = maxPrice;
       if (amenities) params.amenities = amenities;
 
-      // Gọi API GET /api/v1/search
+      // Gọi API GET /api/v1/search kèm page & limit
       const res: any = await apiClient.get('/search', { params });
-      const data = res?.data || res || [];
+      const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const meta = res?.meta || {};
 
-      if (Array.isArray(data)) {
-        setHotels(data);
-      } else {
-        setHotels([]);
-      }
+      setHotels(data);
+      setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
+      setTotalItems(meta.total ?? data.length);
     } catch (err: any) {
       setError(err?.message || 'Không thể tìm kiếm chỗ nghỉ. Vui lòng kiểm tra lại kết nối API Backend.');
       setHotels([]);
     } finally {
       setIsLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, page]);
 
   useEffect(() => {
     fetchSearch();
@@ -75,7 +81,7 @@ function SearchResultsContent() {
         <div className="flex-1 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-black text-gray-900">
-              {isLoading ? 'Đang tìm kiếm chỗ nghỉ...' : `Tìm thấy ${hotels.length} chỗ nghỉ phù hợp`}
+              {isLoading ? 'Đang tìm kiếm chỗ nghỉ...' : `Tìm thấy ${totalItems} chỗ nghỉ phù hợp`}
             </h1>
             <select className="text-xs font-bold border border-gray-300 rounded-lg px-3 py-1.5 bg-white text-gray-800">
               <option>Gợi ý hàng đầu</option>
@@ -103,11 +109,25 @@ function SearchResultsContent() {
               description="Thử thay đổi từ khóa tìm kiếm, khoảng ngày lưu trú hoặc bỏ bớt tiêu chí lọc."
             />
           ) : (
-            <div className="space-y-4">
-              {hotels.map((hotel) => (
-                <PropertyCard key={hotel.id} hotel={hotel} />
-              ))}
-            </div>
+            <>
+              <div className="space-y-4">
+                {hotels.map((hotel) => (
+                  <PropertyCard key={hotel.id} hotel={hotel} />
+                ))}
+              </div>
+
+              {/* Pagination Bar */}
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={totalItems}
+                limit={LIMIT}
+                onPageChange={(p) => {
+                  setPage(p);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </>
           )}
         </div>
       </div>
