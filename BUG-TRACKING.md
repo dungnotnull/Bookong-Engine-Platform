@@ -33,3 +33,6 @@ Tài liệu này được sử dụng để toàn bộ team (Frontend, Backend, 
 | [x] | **BUG-004** | `Frontend` | Thay thế nhập URL Unsplash bằng tính năng Upload. Yêu cầu bổ sung UI Upload File, gọi API `POST /api/v1/upload/image`. | 🟡 MEDIUM | AI Agent | 13/08/2026 - Đã tích hợp UI Upload File & API /upload/image |
 | [x] | **BUG-005** | `Frontend` | Đăng nhập Host thành công nhưng bị đẩy lại trang đăng nhập. Nguyên nhân do `use-auth-store` chỉ lưu token ở `localStorage`, còn Next.js Middleware lại kiểm tra qua `cookie` nên bị chặn lại. | 🔴 CRITICAL | AI Agent | 13/08/2026 - Đã lưu đồng thời token vào cookie & localStorage trong useAuthStore |
 | [x] | **BUG-000** | `Database` | Prisma Schema thiếu các trường lưu trữ `images` và `coverImage` cho Khách sạn và Phòng. Dẫn đến không thể lưu link ảnh thực tế. | 🔴 CRITICAL | AI Agent | 13/08/2026 |
+| [ ] | **BUG-006** | `Frontend` | Thiếu Form/UI Tạo tài khoản Admin mới ở màn hình Quản lý người dùng (`/admin/users`). Cần bổ sung UI gọi API `POST /admin/users` (Đã implement phía Backend). | 🟡 MEDIUM | @Frontend-Team | Cần team Frontend cập nhật |
+| [ ] | **BUG-007** | `Frontend` | Cấu hình Bảng giá động (Dynamic Pricing) gọi sai endpoint. Đang gọi `POST /host/pricing-rules` thay vì `POST /pricing-rules`. Dashboard Host cũng gọi API sai định dạng hoặc chưa đồng bộ model với Backend. | 🟠 HIGH | @Frontend-Team | Chờ fix |
+
