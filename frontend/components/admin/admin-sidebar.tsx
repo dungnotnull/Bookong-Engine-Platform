@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, CheckSquare, Users, LogOut, Home, ShieldAlert } from 'lucide-react';
@@ -10,6 +10,11 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -22,7 +27,9 @@ export function AdminSidebar() {
     { label: 'Quản lý Người dùng & Admin', href: '/admin/users', icon: Users },
   ];
 
-  const displayName = user?.fullName || user?.email || 'Admin Account';
+  const displayName = isMounted && user ? (user.fullName || user.email || 'Admin') : 'Admin Account';
+  const displayEmail = isMounted && user ? (user.email || 'admin@bookong.vn') : 'admin@bookong.vn';
+  const avatarInitial = isMounted && user ? (displayName[0]?.toUpperCase() || 'A') : 'A';
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 border-r border-slate-800 min-h-[calc(100vh-64px)] p-4 flex flex-col justify-between shrink-0">
@@ -61,15 +68,15 @@ export function AdminSidebar() {
         </div>
       </div>
 
-      {/* Bottom Account & Logout Section for Admin */}
+      {/* Bottom Account & Logout Section for Admin (Fix Hydration Mismatch for BUG-015) */}
       <div className="pt-4 border-t border-slate-800 space-y-3">
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-booking-yellow text-slate-900 flex items-center justify-center text-xs font-black shrink-0">
-            {displayName[0]?.toUpperCase()}
+            {avatarInitial}
           </div>
           <div className="truncate text-left">
             <p className="text-xs font-bold text-white truncate">{displayName}</p>
-            <p className="text-[10px] text-slate-400 font-semibold truncate">{user?.email || 'admin@bookong.vn'}</p>
+            <p className="text-[10px] text-slate-400 font-semibold truncate">{displayEmail}</p>
           </div>
         </div>
 
