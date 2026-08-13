@@ -73,7 +73,7 @@ export default function UserBookingsPage() {
   };
 
   return (
-    <div className="booking-container py-8 space-y-6">
+    <div className="booking-container py-8 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-black text-booking-navy">Lịch sử Đặt phòng của bạn</h1>
         <p className="text-xs text-gray-500 mt-1">Quản lý và xem lại thông tin các chuyến đi</p>
