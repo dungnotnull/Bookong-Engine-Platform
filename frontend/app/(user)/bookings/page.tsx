@@ -30,12 +30,8 @@ export default function UserBookingsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      let res: any;
-      try {
-        res = await apiClient.get('/bookings/my-trips', { params: { page, limit: LIMIT } });
-      } catch {
-        res = await apiClient.get('/bookings', { params: { page, limit: LIMIT } });
-      }
+      // Chuẩn hóa gọi trực tiếp API /bookings/my-trips (Fix BUG-012)
+      const res: any = await apiClient.get('/bookings/my-trips', { params: { page, limit: LIMIT } });
       const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
       const meta = res?.meta || {};
 

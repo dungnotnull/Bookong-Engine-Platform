@@ -8,6 +8,7 @@ import { PropertyListing } from '@/lib/dummy-data';
 import { Hotel } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/lib/api-client';
 
 export type ListingItemType = PropertyListing | Hotel;
 
@@ -44,10 +45,21 @@ export function ListingCard({ listing, className }: ListingCardProps) {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsLiked(!isLiked);
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+
+    try {
+      if (nextLiked) {
+        await apiClient.post('/wishlist', { hotelId: listing.id });
+      } else {
+        await apiClient.delete(`/wishlist/${listing.id}`);
+      }
+    } catch {
+      // Optimistic UI state kept
+    }
   };
 
   return (

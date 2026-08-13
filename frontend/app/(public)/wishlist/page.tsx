@@ -19,11 +19,13 @@ export default function WishlistPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/wishlist
+      // Gọi API GET /api/v1/wishlist (Fix BUG-014)
       const res: any = await apiClient.get('/wishlist');
       const data = res?.data || res || [];
       if (Array.isArray(data)) {
-        setWishlistItems(data);
+        // Parse hotel objects from wishlist items if nested
+        const hotels = data.map((item: any) => item.hotel || item);
+        setWishlistItems(hotels);
       } else {
         setWishlistItems([]);
       }
@@ -40,10 +42,10 @@ export default function WishlistPage() {
   }, [fetchWishlist]);
 
   return (
-    <div className="booking-container py-8 space-y-6">
+    <div className="airbnb-container py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-booking-navy">Danh sách Chỗ nghỉ Đã lưu (Wishlist)</h1>
-        <p className="text-xs text-gray-500 mt-1">Các khách sạn và villa ưa thích của bạn</p>
+        <h1 className="text-2xl font-black text-main">Danh sách Chỗ nghỉ Đã lưu (Wishlist)</h1>
+        <p className="text-xs text-muted mt-1">Các khách sạn và villa ưa thích của bạn</p>
       </div>
 
       {isLoading ? (
@@ -57,7 +59,7 @@ export default function WishlistPage() {
         />
       ) : wishlistItems.length === 0 ? (
         <EmptyState
-          icon={<Heart className="w-8 h-8 text-red-500 fill-red-100" />}
+          icon={<Heart className="w-8 h-8 text-rausch fill-rausch/10" />}
           title="Danh sách yêu thích đang trống"
           description="Nhấp vào biểu tượng trái tim ở bất kỳ chỗ nghỉ nào để lưu lại danh sách các chuyến đi mơ ước của bạn."
           actionLabel="Khám phá chỗ nghỉ ngay"

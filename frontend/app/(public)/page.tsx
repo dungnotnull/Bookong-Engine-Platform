@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PillSearchBar } from '@/components/search/pill-search-bar';
 import { CategoryBar } from '@/components/listing/category-bar';
 import { ListingGrid } from '@/components/listing/listing-grid';
-import { FilterModal } from '@/components/search/filter-modal';
+import { FilterModal, FilterValues } from '@/components/search/filter-modal';
 import { ErrorState } from '@/components/common/error-state';
 import { Pagination } from '@/components/common/pagination';
 import { Hotel } from '@/types/hotel';
@@ -13,6 +13,7 @@ import { apiClient } from '@/lib/api-client';
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterValues>({});
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,8 +29,23 @@ export default function HomePage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API thực tế GET /api/v1/hotels kèm page & limit
-      const res: any = await apiClient.get('/hotels', { params: { page, limit: LIMIT } });
+      // Gọi API GET /api/v1/hotels kèm page, limit, category & filters (Fix BUG-011)
+      const queryParams: Record<string, any> = {
+        page,
+        limit: LIMIT,
+      };
+
+      if (selectedCategory && selectedCategory !== 'all') {
+        queryParams.category = selectedCategory;
+      }
+      if (activeFilters.minPrice) {
+        queryParams.minPrice = activeFilters.minPrice;
+      }
+      if (activeFilters.maxPrice) {
+        queryParams.maxPrice = activeFilters.maxPrice;
+      }
+
+      const res: any = await apiClient.get('/hotels', { params: queryParams });
       const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
       const meta = res?.meta || {};
 
@@ -42,11 +58,21 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page]);
+  }, [page, selectedCategory, activeFilters]);
 
   useEffect(() => {
     fetchHotels();
   }, [fetchHotels]);
+
+  const handleCategorySelect = (catId: string) => {
+    setSelectedCategory(catId);
+    setPage(1);
+  };
+
+  const handleApplyFilterModal = (filters: FilterValues) => {
+    setActiveFilters(filters);
+    setPage(1);
+  };
 
   return (
     <div className="pb-16 space-y-4">
@@ -65,10 +91,10 @@ export default function HomePage() {
         <PillSearchBar />
       </section>
 
-      {/* Category Scroll Filter Bar */}
+      {/* Category Scroll Filter Bar (Fix BUG-011 Event Handler) */}
       <CategoryBar
         selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={handleCategorySelect}
         onOpenFilterModal={() => setIsFilterOpen(true)}
       />
 
@@ -102,11 +128,11 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Filter Modal */}
+      {/* Filter Modal (Fix BUG-011 onApply Filter) */}
       <FilterModal
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        onApply={() => {}}
+        onApply={handleApplyFilterModal}
       />
     </div>
   );

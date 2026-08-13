@@ -14,6 +14,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
 
   const fetchHotel = useCallback(async () => {
     if (!params.id) return;
@@ -40,9 +41,25 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
     fetchHotel();
   }, [fetchHotel]);
 
+  // Wishlist toggle handler for BUG-014
+  const toggleWishlist = async () => {
+    if (!hotel) return;
+    try {
+      if (isLiked) {
+        await apiClient.delete(`/wishlist/${hotel.id}`);
+        setIsLiked(false);
+      } else {
+        await apiClient.post('/wishlist', { hotelId: hotel.id });
+        setIsLiked(true);
+      }
+    } catch {
+      setIsLiked(!isLiked);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="booking-container py-8 space-y-6">
+      <div className="airbnb-container py-8 space-y-6">
         <Skeleton className="h-10 w-2/3 rounded-xl" />
         <Skeleton className="h-4 w-1/3 rounded-md" />
         <Skeleton className="h-80 w-full rounded-2xl" />
@@ -56,7 +73,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
 
   if (error) {
     return (
-      <div className="booking-container py-12">
+      <div className="airbnb-container py-12">
         <ErrorState
           title="Không thể tải thông tin khách sạn"
           message={error}
@@ -69,7 +86,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
 
   if (!hotel) {
     return (
-      <div className="booking-container py-12">
+      <div className="airbnb-container py-12">
         <EmptyState
           title="Không tìm thấy thông tin khách sạn"
           description="Khách sạn bạn đang tìm kiếm không tồn tại hoặc đã bị gỡ khỏi sàn."
@@ -83,7 +100,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
     : (hotel.coverImage ? [hotel.coverImage] : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop']);
 
   return (
-    <div className="booking-container py-8 space-y-8">
+    <div className="airbnb-container py-8 space-y-8">
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -103,11 +120,19 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50">
+          <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
             <Share2 className="w-4 h-4" /> Chia sẻ
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50">
-            <Heart className="w-4 h-4 text-red-500" /> Lưu
+          <button
+            onClick={toggleWishlist}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
+              isLiked
+                ? 'bg-rose-50 border-rose-200 text-rose-600'
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+            {isLiked ? 'Đã lưu Yêu thích' : 'Lưu Yêu thích'}
           </button>
         </div>
       </div>
