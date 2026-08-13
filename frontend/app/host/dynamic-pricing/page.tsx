@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, Save, Building2 } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, Save, Building2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,9 +10,21 @@ import { EmptyState } from '@/components/common/empty-state';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 
+interface PricingRule {
+  id: string;
+  name: string;
+  hotelId: string;
+  multiplier: number;
+  startDate?: string;
+  endDate?: string;
+  dayOfWeek?: number;
+}
+
 export default function HostDynamicPricingPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [selectedHotel, setSelectedHotel] = useState<string>('');
+  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
+  
   const [surgeMultiplier, setSurgeMultiplier] = useState(1.2);
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-05');
@@ -44,9 +56,31 @@ export default function HostDynamicPricingPage() {
     }
   }, []);
 
+  const fetchPricingRules = useCallback(async (hotelId: string) => {
+    if (!hotelId) return;
+    try {
+      // Gọi đúng API endpoint GET /api/v1/pricing-rules theo Backend Contract (Fix BUG-007)
+      const res: any = await apiClient.get('/pricing-rules', { params: { hotelId } });
+      const data = res?.data || res || [];
+      if (Array.isArray(data)) {
+        setPricingRules(data);
+      } else {
+        setPricingRules([]);
+      }
+    } catch {
+      setPricingRules([]);
+    }
+  }, []);
+
   useEffect(() => {
     fetchHostHotels();
   }, [fetchHostHotels]);
+
+  useEffect(() => {
+    if (selectedHotel) {
+      fetchPricingRules(selectedHotel);
+    }
+  }, [selectedHotel, fetchPricingRules]);
 
   const handleSaveRule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,19 +89,31 @@ export default function HostDynamicPricingPage() {
     setIsSaving(true);
     setSuccessMessage('');
     try {
-      await apiClient.post('/host/pricing-rules', {
+      // Gọi đúng API endpoint POST /api/v1/pricing-rules (Fix BUG-007)
+      await apiClient.post('/pricing-rules', {
         hotelId: selectedHotel,
         name: ruleName,
         multiplier: surgeMultiplier,
         startDate,
         endDate,
       });
+
       setSuccessMessage('Đã lưu quy tắc Dynamic Pricing thành công!');
       setTimeout(() => setSuccessMessage(''), 4000);
+      fetchPricingRules(selectedHotel);
     } catch (err: any) {
       alert(err?.message || 'Lưu quy tắc giá thất bại. Vui lòng kiểm tra lại.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    try {
+      await apiClient.delete(`/pricing-rules/${ruleId}`);
+      setPricingRules((prev) => prev.filter((r) => r.id !== ruleId));
+    } catch (err: any) {
+      alert(err?.message || 'Xóa quy tắc thất bại.');
     }
   };
 
@@ -175,23 +221,43 @@ export default function HostDynamicPricingPage() {
           )}
         </form>
 
-        {/* Calendar Preview Card */}
+        {/* Dynamic Pricing Rules List Panel */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-airbnb space-y-4">
           <h3 className="font-bold text-base text-gray-900 flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-booking-navy" /> Xem trước Lịch điều chỉnh Giá
+            <CalendarIcon className="w-5 h-5 text-booking-navy" /> Quy tắc Pricing Đang Hoạt động
           </h3>
 
-          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 text-xs space-y-2">
-            <p className="font-bold text-booking-navy">Quy tắc đang áp dụng:</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 font-semibold text-gray-800">
-                {ruleName} ({startDate} &rarr; {endDate}): <strong className="text-booking-blue">{surgeMultiplier}x</strong>
-              </span>
-              <span className="bg-white px-2.5 py-1 rounded-lg border border-blue-200 font-semibold text-gray-800">
-                Cuối tuần T7 & CN: <strong className="text-booking-blue">1.15x</strong>
-              </span>
+          {pricingRules.length === 0 ? (
+            <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+              <p className="text-xs text-gray-500 font-medium">Chưa có quy tắc giá động nào cho khách sạn này.</p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {pricingRules.map((rule) => (
+                <div key={rule.id} className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="font-extrabold text-sm text-booking-navy">{rule.name}</p>
+                    <p className="text-xs text-gray-600">
+                      Thời gian: {rule.startDate ? rule.startDate.split('T')[0] : 'Tất cả'} &rarr; {rule.endDate ? rule.endDate.split('T')[0] : 'Tất cả'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="bg-booking-blue text-white px-3 py-1 rounded-lg text-xs font-black">
+                      {rule.multiplier}x
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRule(rule.id)}
+                      className="p-1.5 text-gray-400 hover:text-rose-600 transition-colors"
+                      title="Xóa quy tắc"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

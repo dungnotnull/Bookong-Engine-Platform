@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { UserPlus, ShieldCheck } from 'lucide-react';
 import { UserRole } from '@/types/user';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
@@ -24,6 +27,14 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal Create Admin states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newFullName, setNewFullName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -65,11 +76,59 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+
+    if (!newEmail || !newPassword) {
+      setCreateError('Vui lòng nhập đầy đủ Email và Mật khẩu.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setCreateError('Mật khẩu tối thiểu phải từ 6 ký tự.');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      // Gọi API POST /api/v1/admin/users để khởi tạo Admin mới
+      await apiClient.post('/admin/users', {
+        email: newEmail,
+        password: newPassword,
+        fullName: newFullName || undefined,
+      });
+
+      setIsModalOpen(false);
+      setNewEmail('');
+      setNewPassword('');
+      setNewFullName('');
+      fetchUsers();
+    } catch (err: any) {
+      setCreateError(err?.message || 'Không thể tạo tài khoản Admin mới. Vui lòng thử lại sau.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="booking-container py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-booking-navy">Quản lý Tài khoản Người dùng & Host</h1>
-        <p className="text-xs text-gray-500 mt-1">Kiểm soát quyền hạn và trạng thái hoạt động tài khoản</p>
+      {/* Top Bar Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-booking-navy">Quản lý Tài khoản Người dùng & Host</h1>
+          <p className="text-xs text-gray-500 mt-1">Kiểm soát quyền hạn, khởi tạo quản trị viên và quản lý trạng thái tài khoản</p>
+        </div>
+
+        {/* Nút bấm Tạo tài khoản Admin mới (BUG-006 Resolution) */}
+        <Button
+          variant="action"
+          onClick={() => setIsModalOpen(true)}
+          className="font-bold gap-2 self-start sm:self-auto"
+        >
+          <UserPlus className="w-4 h-4" />
+          Tạo tài khoản Admin mới
+        </Button>
       </div>
 
       {isLoading ? (
@@ -142,6 +201,58 @@ export default function AdminUsersPage() {
           />
         </>
       )}
+
+      {/* Modal Form Tạo Admin mới (Fix BUG-006) */}
+      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tạo Tài khoản Admin Quản trị mới">
+        <form onSubmit={handleCreateAdmin} className="space-y-4 py-2">
+          <div className="p-3 bg-blue-50/60 rounded-xl text-xs text-booking-navy flex items-start gap-2 border border-blue-100">
+            <ShieldCheck className="w-5 h-5 shrink-0 text-booking-blue" />
+            <span>
+              Tài khoản Admin tạo ra sẽ có đầy đủ quyền phê duyệt khách sạn, quản lý người dùng và cấu hình toàn hệ thống.
+            </span>
+          </div>
+
+          {createError && (
+            <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-xl border border-rose-200">
+              {createError}
+            </div>
+          )}
+
+          <Input
+            label="Họ và tên Admin"
+            placeholder="Nguyễn Văn A"
+            value={newFullName}
+            onChange={(e) => setNewFullName(e.target.value)}
+          />
+
+          <Input
+            label="Địa chỉ Email *"
+            type="email"
+            placeholder="admin@bookong.vn"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            required
+          />
+
+          <Input
+            label="Mật khẩu khởi tạo *"
+            type="password"
+            placeholder="Tối thiểu 6 ký tự"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button variant="action" type="submit" isLoading={isCreating} className="font-bold">
+              Tạo Admin ngay
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }
