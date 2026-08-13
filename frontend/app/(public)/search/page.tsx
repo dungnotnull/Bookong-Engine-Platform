@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { HeroSearchBar } from '@/components/search/hero-search-bar';
 import { FilterSidebar } from '@/components/search/filter-sidebar';
 import { PropertyCard } from '@/components/search/property-card';
@@ -13,13 +13,14 @@ import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function SearchResultsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Pagination states
-  const [page, setPage] = useState(1);
+  const pageFromUrl = Number(searchParams.get('page')) || 1;
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const LIMIT = 10;
@@ -35,6 +36,7 @@ function SearchResultsContent() {
       const minPrice = searchParams.get('minPrice') || '';
       const maxPrice = searchParams.get('maxPrice') || '';
       const amenities = searchParams.get('amenities') || '';
+      const page = Number(searchParams.get('page')) || 1;
 
       const params: Record<string, any> = { page, limit: LIMIT };
       if (q) params.q = q;
@@ -45,7 +47,7 @@ function SearchResultsContent() {
       if (maxPrice) params.maxPrice = maxPrice;
       if (amenities) params.amenities = amenities;
 
-      // Gọi API GET /api/v1/search kèm page & limit
+      // Gọi API GET /api/v1/search kèm page & limit & các bộ lọc
       const res: any = await apiClient.get('/search', { params });
       const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
       const meta = res?.meta || {};
@@ -59,11 +61,18 @@ function SearchResultsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchParams, page]);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchSearch();
   }, [fetchSearch]);
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', newPage.toString());
+    router.push(`/search?${params.toString()}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="space-y-6 pb-16">
@@ -118,14 +127,11 @@ function SearchResultsContent() {
 
               {/* Pagination Bar */}
               <Pagination
-                page={page}
+                page={pageFromUrl}
                 totalPages={totalPages}
                 total={totalItems}
                 limit={LIMIT}
-                onPageChange={(p) => {
-                  setPage(p);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onPageChange={handlePageChange}
               />
             </>
           )}

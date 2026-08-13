@@ -1,4 +1,4 @@
-export type BookingStatus = 'HELD' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCELLED';
+export type BookingStatus = 'HELD' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCELLED' | 'PENDING_PAYMENT' | 'COMPLETED';
 
 export interface CustomerInfo {
   name: string;
@@ -26,17 +26,32 @@ export interface PriceBreakdown {
 
 export interface Booking {
   id: string;
-  code: string; // Mã đặt phòng hiển thị cho khách
-  roomId: string;
-  roomName: string;
-  hotelName: string;
+  code?: string; // Mã đặt phòng hiển thị cho khách
+  roomId?: string;
+  roomName?: string;
+  hotelName?: string;
   userId: string;
-  customerInfo: CustomerInfo;
+  customerInfo?: CustomerInfo;
   checkIn: string;
   checkOut: string;
   guests: number;
-  totalAmount: number;
+  totalAmount?: number;
+  totalPrice?: number;
   status: BookingStatus;
-  paymentMethod: string;
-  createdAt: string;
+  paymentMethod?: string;
+  refundAmount?: number;
+  createdAt?: string;
+  room?: {
+    id: string;
+    name: string;
+    type?: string;
+    imageUrl?: string;
+    hotel?: {
+      id: string;
+      name: string;
+      address?: string;
+      city?: string;
+      coverImage?: string;
+    };
+  };
 }

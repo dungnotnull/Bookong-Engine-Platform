@@ -13,6 +13,7 @@ export interface Room {
   basePrice: number; // Giá gốc VND/đêm
   capacity: number; // Sức chứa khách
   quantity: number; // Tổng số phòng khả dụng trong kho
+  availableQuantity?: number; // Số lượng phòng thực tế khả dụng theo khoảng ngày tra cứu
   amenities: Amenity[];
   imageUrl?: string;
   createdAt?: string;
@@ -31,6 +32,7 @@ export interface Hotel {
   images: string[];
   amenities: Amenity[];
   rooms?: Room[];
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   isApproved?: boolean;
   createdAt?: string;
 }

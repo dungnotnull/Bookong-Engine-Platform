@@ -70,7 +70,7 @@ export default function UserProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="booking-container py-8 max-w-2xl space-y-6">
+      <div className="booking-container py-8 max-w-2xl mx-auto space-y-6">
         <Skeleton className="h-10 w-1/2 rounded-xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
@@ -79,7 +79,7 @@ export default function UserProfilePage() {
 
   if (error) {
     return (
-      <div className="booking-container py-12">
+      <div className="booking-container py-12 mx-auto">
         <ErrorState
           title="Không thể tải trang hồ sơ cá nhân"
           message={error}
@@ -91,7 +91,7 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="booking-container py-8 max-w-2xl space-y-6">
+    <div className="booking-container py-8 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-black text-booking-navy">Cài đặt Hồ sơ Cá nhân</h1>
         <p className="text-xs text-gray-500 mt-1">Quản lý thông tin tài khoản và phân quyền người dùng</p>
