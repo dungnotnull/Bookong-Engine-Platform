@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, BedDouble, Users, Layers, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -13,7 +14,10 @@ import { Room, Hotel } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
 import { apiClient } from '@/lib/api-client';
 
-export default function HostRoomsPage() {
+function HostRoomsContent() {
+  const searchParams = useSearchParams();
+  const targetHotelId = searchParams.get('hotelId');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [selectedHotelId, setSelectedHotelId] = useState<string>('');
@@ -31,7 +35,9 @@ export default function HostRoomsPage() {
       const data = res?.data || res || [];
       if (Array.isArray(data) && data.length > 0) {
         setHotels(data);
-        setSelectedHotelId(data[0].id);
+        // Ưu tiên chọn hotelId từ URL search parameter nếu khớp
+        const matched = targetHotelId ? data.find((h) => h.id === targetHotelId) : null;
+        setSelectedHotelId(matched ? matched.id : data[0].id);
       } else {
         setHotels([]);
         setSelectedHotelId('');
@@ -42,7 +48,7 @@ export default function HostRoomsPage() {
     } finally {
       setIsLoadingHotels(false);
     }
-  }, []);
+  }, [targetHotelId]);
 
   useEffect(() => {
     fetchHostHotels();
@@ -206,5 +212,20 @@ export default function HostRoomsPage() {
         />
       </Dialog>
     </div>
+  );
+}
+
+export default function HostRoomsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3 rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+        </div>
+      }
+    >
+      <HostRoomsContent />
+    </Suspense>
   );
 }

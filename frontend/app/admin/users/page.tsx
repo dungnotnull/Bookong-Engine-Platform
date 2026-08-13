@@ -28,11 +28,12 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal Create Admin states
+  // Modal Create User/Admin states (Fix BUG-009)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
+  const [newRole, setNewRole] = useState<UserRole>('USER');
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -76,7 +77,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleCreateAdmin = async (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
 
@@ -92,20 +93,22 @@ export default function AdminUsersPage() {
 
     setIsCreating(true);
     try {
-      // Gọi API POST /api/v1/admin/users để khởi tạo Admin mới
+      // Gọi API POST /api/v1/admin/users hỗ trợ truyền role (Fix BUG-009)
       await apiClient.post('/admin/users', {
         email: newEmail,
         password: newPassword,
         fullName: newFullName || undefined,
+        role: newRole,
       });
 
       setIsModalOpen(false);
       setNewEmail('');
       setNewPassword('');
       setNewFullName('');
+      setNewRole('USER');
       fetchUsers();
     } catch (err: any) {
-      setCreateError(err?.message || 'Không thể tạo tài khoản Admin mới. Vui lòng thử lại sau.');
+      setCreateError(err?.message || 'Không thể khởi tạo tài khoản mới. Vui lòng thử lại sau.');
     } finally {
       setIsCreating(false);
     }
@@ -117,17 +120,17 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-booking-navy">Quản lý Tài khoản Người dùng & Host</h1>
-          <p className="text-xs text-gray-500 mt-1">Kiểm soát quyền hạn, khởi tạo quản trị viên và quản lý trạng thái tài khoản</p>
+          <p className="text-xs text-gray-500 mt-1">Kiểm soát quyền hạn, khởi tạo tài khoản và quản lý trạng thái người dùng</p>
         </div>
 
-        {/* Nút bấm Tạo tài khoản Admin mới (BUG-006 Resolution) */}
+        {/* Nút bấm Khởi tạo Tài khoản Mới (BUG-009 Resolution) */}
         <Button
           variant="action"
           onClick={() => setIsModalOpen(true)}
           className="font-bold gap-2 self-start sm:self-auto"
         >
           <UserPlus className="w-4 h-4" />
-          Tạo tài khoản Admin mới
+          Khởi tạo Tài khoản Mới
         </Button>
       </div>
 
@@ -202,13 +205,13 @@ export default function AdminUsersPage() {
         </>
       )}
 
-      {/* Modal Form Tạo Admin mới (Fix BUG-006) */}
-      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tạo Tài khoản Admin Quản trị mới">
-        <form onSubmit={handleCreateAdmin} className="space-y-4 py-2">
+      {/* Modal Form Khởi tạo Tài khoản Mới (Fix BUG-009) */}
+      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Khởi tạo Tài khoản Người dùng Mới">
+        <form onSubmit={handleCreateUser} className="space-y-4 py-2">
           <div className="p-3 bg-blue-50/60 rounded-xl text-xs text-booking-navy flex items-start gap-2 border border-blue-100">
             <ShieldCheck className="w-5 h-5 shrink-0 text-booking-blue" />
             <span>
-              Tài khoản Admin tạo ra sẽ có đầy đủ quyền phê duyệt khách sạn, quản lý người dùng và cấu hình toàn hệ thống.
+              Chọn vai trò phù hợp (USER, HOST hoặc ADMIN) để cấp quyền truy cập hệ thống tương ứng cho tài khoản mới.
             </span>
           </div>
 
@@ -219,8 +222,8 @@ export default function AdminUsersPage() {
           )}
 
           <Input
-            label="Họ và tên Admin"
-            placeholder="Nguyễn Văn A"
+            label="Họ và tên người dùng"
+            placeholder="vd: Nguyễn Văn A"
             value={newFullName}
             onChange={(e) => setNewFullName(e.target.value)}
           />
@@ -228,7 +231,7 @@ export default function AdminUsersPage() {
           <Input
             label="Địa chỉ Email *"
             type="email"
-            placeholder="admin@bookong.vn"
+            placeholder="user@bookong.vn"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             required
@@ -243,12 +246,25 @@ export default function AdminUsersPage() {
             required
           />
 
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-700">Vai trò tài khoản (Role) *</label>
+            <select
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value as UserRole)}
+              className="px-3 py-2 text-xs font-bold border border-gray-300 rounded-lg outline-none bg-white text-gray-900"
+            >
+              <option value="USER">USER - Khách hàng đặt phòng</option>
+              <option value="HOST">HOST - Chủ khách sạn / Cơ sở lưu trú</option>
+              <option value="ADMIN">ADMIN - Quản trị viên hệ thống</option>
+            </select>
+          </div>
+
           <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
               Hủy
             </Button>
             <Button variant="action" type="submit" isLoading={isCreating} className="font-bold">
-              Tạo Admin ngay
+              Khởi tạo Tài khoản
             </Button>
           </div>
         </form>

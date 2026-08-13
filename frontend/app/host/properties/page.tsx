@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Building2, MapPin, Star } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Building2, MapPin, Star, BedDouble } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { HotelWizardForm } from '@/components/host/hotel-wizard-form';
@@ -118,13 +119,18 @@ export default function HostPropertiesPage() {
                   </div>
                 </div>
 
+                {/* Footer Action Card - Link Quản lý loại phòng (Fix BUG-010) */}
                 <div className="p-5 pt-0 flex items-center justify-between border-t border-gray-50 mt-4">
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${hotel.isApproved ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
                     {hotel.isApproved ? 'Đã duyệt (Active)' : 'Đang chờ duyệt'}
                   </span>
-                  <Button variant="outline" size="sm" className="font-bold">
-                    Quản lý loại phòng
-                  </Button>
+                  
+                  {/* Nút Quản lý loại phòng có sự kiện onClick / Link sang /host/rooms */}
+                  <Link href={`/host/rooms?hotelId=${hotel.id}`}>
+                    <Button variant="outline" size="sm" className="font-bold gap-1.5 hover:bg-booking-blue hover:text-white transition-colors">
+                      <BedDouble className="w-3.5 h-3.5" /> Quản lý loại phòng
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))}
