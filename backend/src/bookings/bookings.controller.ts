@@ -9,34 +9,29 @@ export class BookingsController {
 
   @Post('hold')
   async holdRoom(@Body() data: HoldRoomDto) {
-    const result = await this.bookingsService.holdRoom(data);
-    return { success: true, data: result };
+    return this.bookingsService.holdRoom(data);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-trips')
   async getMyTrips(@Request() req: any) {
-    const result = await this.bookingsService.getMyTrips(req.user.userId);
-    return { success: true, data: result };
+    return this.bookingsService.getMyTrips(req.user.id);
   }
 
   @Post('calculate-price')
   async calculatePrice(@Body() data: CalculatePriceDto) {
-    const result = await this.bookingsService.calculatePrice(data);
-    return { success: true, data: result };
+    return this.bookingsService.calculatePrice(data);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
   async submitBooking(@Request() req: any, @Body() data: SubmitBookingDto) {
-    const result = await this.bookingsService.submitBooking(req.user.userId, data);
-    return { success: true, data: result };
+    return this.bookingsService.submitBooking(req.user.id, data);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/cancel')
   async cancelBooking(@Request() req: any, @Param('id') id: string) {
-    const result = await this.bookingsService.cancelBooking(id, req.user.userId);
-    return { success: true, data: result };
+    return this.bookingsService.cancelBooking(id, req.user.id);
   }
 }
