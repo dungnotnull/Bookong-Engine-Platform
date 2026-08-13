@@ -110,18 +110,32 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 ---
 
 ### 2.9. Admin Dashboard
-- `GET /api/v1/admin/dashboard/stats`:
-  - **Response Data**: `{ "totalUsers": 100, "totalHotels": 50, "pendingHotels": 5, "totalRooms": 200, "totalGMV": 50000 }`
+- `GET /api/v1/admin/analytics`:
+  - **Response Data**: `{ "totalUsers": 100, "totalHotels": 50, "pendingHotelsCount": 5, "totalRooms": 200, "totalGMV": 50000 }`
 - `GET /api/v1/admin/users`:
   - **Query Params**: `page`, `limit`
-  - **Response Data**: `[ { "id": "uuid", "email": "a@b.c", "role": "USER", "createdAt": "ISO Date" } ]`
+  - **Response Data**: `[ { "id": "uuid", "email": "a@b.c", "role": "USER", "isBanned": false, "createdAt": "ISO Date" } ]`
+- `PATCH /api/v1/admin/users/:id/status`:
+  - **Payload**: `{ "isBanned": true }`
+  - **Response Data**: Thông tin User sau khi cập nhật trạng thái.
+- `POST /api/v1/admin/users`:
+  - **Payload**: `{ "email": "admin2@b.c", "password": "123", "fullName": "Admin 2" }`
+  - **Response Data**: Thông tin Admin vừa tạo.
 - `GET /api/v1/admin/hotels`:
   - **Query Params**: `status` (PENDING|APPROVED|REJECTED), `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "name": "str", "host": { "email": "a@b.c" }, "status": "PENDING" } ]`
+- `GET /api/v1/admin/hotels/pending`:
+  - **Query Params**: `page`, `limit`
+  - **Response Data**: `[ { "id": "uuid", "name": "str", "host": { "email": "a@b.c" }, "status": "PENDING" } ]`
+- `PATCH /api/v1/admin/hotels/:id/approve`:
+  - **Payload**: `{ "isApproved": true }`
+  - **Response Data**: Thông tin Khách sạn sau khi duyệt/từ chối.
 
 ---
 
 ### 2.10. Host Analytics
+- `GET /api/v1/host/analytics`:
+  - **Response Data**: `{ "totalHotels": 3, "totalRooms": 15, "monthlyBookings": 12, "occupancyRate": 75.5 }`
 - `GET /api/v1/host/bookings`:
   - **Query Params**: `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "userId": "uuid", "roomId": "uuid", "status": "CONFIRMED", "totalPrice": 100, "user": { "email": "a@b.c" } } ]`
