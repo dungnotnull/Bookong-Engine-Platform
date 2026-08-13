@@ -32,4 +32,8 @@ export class CreateAdminDto {
   @IsString()
   @IsOptional()
   fullName?: string;
+
+  @IsEnum(Role)
+  @IsOptional()
+  role?: Role;
 }

@@ -13,16 +13,29 @@ export class HotelsService {
 
   async create(hostId: string, data: CreateHotelDto) {
     const { amenities, amenityIds, ...hotelData } = data;
-    const finalAmenities = amenities || amenityIds;
+    const finalAmenities = amenities || amenityIds || [];
     const country = hotelData.country || 'Việt Nam';
     
+    // Resolve amenities to actual UUIDs
+    const actualAmenityIds = await Promise.all(
+      finalAmenities.map(async (am) => {
+        let amenity = await this.prisma.amenity.findFirst({
+          where: { OR: [{ id: am }, { name: { equals: am, mode: 'insensitive' } }] }
+        });
+        if (!amenity) {
+          amenity = await this.prisma.amenity.create({ data: { name: am } });
+        }
+        return amenity.id;
+      })
+    );
+
     const hotel = await this.prisma.hotel.create({
       data: {
         ...hotelData,
         country,
         hostId,
-        hotelAmenities: finalAmenities ? {
-          create: finalAmenities.map(id => ({ amenityId: id }))
+        hotelAmenities: actualAmenityIds.length > 0 ? {
+          create: actualAmenityIds.map(id => ({ amenityId: id }))
         } : undefined
       },
       include: { hotelAmenities: { include: { amenity: true } } }
@@ -91,16 +104,29 @@ export class HotelsService {
     }
 
     const { amenities, amenityIds, ...hotelData } = data;
-    const finalAmenities = amenities || amenityIds;
+    const finalAmenities = amenities || amenityIds || [];
     
+    // Resolve amenities to actual UUIDs
+    const actualAmenityIds = await Promise.all(
+      finalAmenities.map(async (am) => {
+        let amenity = await this.prisma.amenity.findFirst({
+          where: { OR: [{ id: am }, { name: { equals: am, mode: 'insensitive' } }] }
+        });
+        if (!amenity) {
+          amenity = await this.prisma.amenity.create({ data: { name: am } });
+        }
+        return amenity.id;
+      })
+    );
+
     const updatedHotel = await this.prisma.hotel.update({
       where: { id },
       data: {
         ...hotelData,
-        hotelAmenities: finalAmenities ? {
+        hotelAmenities: actualAmenityIds.length > 0 ? {
           deleteMany: {},
-          create: finalAmenities.map(amId => ({ amenityId: amId }))
-        } : undefined
+          create: actualAmenityIds.map(amId => ({ amenityId: amId }))
+        } : { deleteMany: {} }
       },
       include: { hotelAmenities: { include: { amenity: true } } }
     });
@@ -118,22 +144,26 @@ export class HotelsService {
   }
 
   async syncVector(hotelId: string) {
-    const hotel = await this.prisma.hotel.findUnique({
-      where: { id: hotelId },
-      include: { hotelAmenities: { include: { amenity: true } } }
-    });
-    
-    if (!hotel) return;
+    try {
+      const hotel = await this.prisma.hotel.findUnique({
+        where: { id: hotelId },
+        include: { hotelAmenities: { include: { amenity: true } } }
+      });
+      
+      if (!hotel) return;
 
-    const amenityNames = hotel.hotelAmenities.map(ha => ha.amenity.name).join(' ');
-    const textToEmbed = `${hotel.name} ${hotel.description || ''} ${amenityNames}`.trim();
-    
-    if (!textToEmbed) return;
+      const amenityNames = hotel.hotelAmenities.map(ha => ha.amenity.name).join(' ');
+      const textToEmbed = `${hotel.name} ${hotel.description || ''} ${amenityNames}`.trim();
+      
+      if (!textToEmbed) return;
 
-    const vector = await this.vectorService.getEmbedding(textToEmbed);
-    const vectorStr = `[${vector.join(',')}]`;
+      const vector = await this.vectorService.getEmbedding(textToEmbed);
+      const vectorStr = `[${vector.join(',')}]`;
 
-    // Raw query to update pgvector column
-    await this.prisma.$executeRaw`UPDATE "Hotel" SET "searchVector" = ${vectorStr}::vector WHERE id = ${hotel.id}`;
+      // Raw query to update pgvector column
+      await this.prisma.$executeRaw`UPDATE "Hotel" SET "searchVector" = ${vectorStr}::vector WHERE id = ${hotel.id}`;
+    } catch (error) {
+      console.warn(`[WARNING] Failed to sync vector for hotel ${hotelId}: Python Vector Service might be down.`);
+    }
   }
 }

@@ -4,3 +4,6 @@ node_modules
 
 /generated/prisma
 /dist
+
+# Ignore uploaded files
+/public/uploads/*

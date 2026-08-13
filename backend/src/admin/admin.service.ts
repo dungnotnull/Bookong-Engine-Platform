@@ -137,8 +137,8 @@ export class AdminService {
       data: {
         email: data.email,
         passwordHash,
-        fullName: data.fullName || 'Admin',
-        role: 'ADMIN',
+        fullName: data.fullName || 'Người dùng',
+        role: data.role || 'ADMIN',
       },
       select: {
         id: true,
