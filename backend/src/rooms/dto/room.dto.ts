@@ -23,6 +23,10 @@ export class CreateRoomDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class UpdateRoomDto {
@@ -53,4 +57,8 @@ export class UpdateRoomDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
