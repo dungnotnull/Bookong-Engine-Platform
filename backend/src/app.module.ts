@@ -11,6 +11,13 @@ import { HotelsModule } from './hotels/hotels.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { VectorModule } from './vector/vector.module';
 import { AdminModule } from './admin/admin.module';
+import { SearchModule } from './search/search.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { CouponsModule } from './coupons/coupons.module';
+import { PricingRulesModule } from './pricing-rules/pricing-rules.module';
+import { CancellationPoliciesModule } from './cancellation-policies/cancellation-policies.module';
+import { HostModule } from './host/host.module';
 
 @Module({
   imports: [
@@ -28,6 +35,13 @@ import { AdminModule } from './admin/admin.module';
     RoomsModule,
     VectorModule,
     AdminModule,
+    SearchModule,
+    BookingsModule,
+    WishlistModule,
+    CouponsModule,
+    PricingRulesModule,
+    CancellationPoliciesModule,
+    HostModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -29,6 +29,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   hotels       Hotel[]
+  bookings     Booking[]
+  wishlists    Wishlist[]
+  coupons      Coupon[]
 }
 
 model Hotel {
@@ -47,6 +50,9 @@ model Hotel {
   updatedAt     DateTime        @updatedAt
   rooms         Room[]
   hotelAmenities HotelAmenity[]
+  wishlists     Wishlist[]
+  pricingRules  PricingRule[]
+  cancellationPolicies CancellationPolicy[]
 }
 
 model Room {
@@ -62,6 +68,7 @@ model Room {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   roomAmenities RoomAmenity[]
+  bookings      Booking[]
 }
 
 model Amenity {
@@ -90,4 +97,81 @@ model RoomAmenity {
   amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
 
   @@id([roomId, amenityId])
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  CHECKED_IN
+  CHECKED_OUT
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  userId        String
+  roomId        String
+  user          User          @relation(fields: [userId], references: [id])
+  room          Room          @relation(fields: [roomId], references: [id])
+  checkIn       DateTime
+  checkOut      DateTime
+  guests        Int
+  totalPrice    Float
+  status        BookingStatus @default(PENDING_PAYMENT)
+  paymentMethod String?
+  refundAmount  Float?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model PricingRule {
+  id         String   @id @default(uuid())
+  hotelId    String
+  hotel      Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  name       String
+  multiplier Float?
+  flatFee    Float?
+  startDate  DateTime?
+  endDate    DateTime?
+  dayOfWeek  Int?
+  createdAt  DateTime @default(now())
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Coupon {
+  id            String       @id @default(uuid())
+  code          String       @unique
+  discountType  DiscountType
+  amount        Float
+  maxDiscount   Float?
+  minSpend      Float?
+  quantity      Int?
+  hostId        String?
+  host          User?        @relation(fields: [hostId], references: [id])
+  expiryDate    DateTime?
+  createdAt     DateTime     @default(now())
+}
+
+model Wishlist {
+  userId  String
+  hotelId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, hotelId])
+}
+
+model CancellationPolicy {
+  id                  String   @id @default(uuid())
+  hotelId             String
+  hotel               Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  daysBeforeCheckIn   Int
+  penaltyPercentage   Float
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

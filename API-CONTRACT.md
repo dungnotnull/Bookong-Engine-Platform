@@ -86,4 +86,32 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 - `GET /api/v1/admin/hotels`: Lấy danh sách khách sạn (Query param: `?status=PENDING|APPROVED|REJECTED`).
 - `PATCH /api/v1/admin/hotels/:id/status`: Phê duyệt/Từ chối khách sạn (Payload: `{ status: "APPROVED" | "REJECTED" | "PENDING" }`).
 
-(Tiếp tục cập nhật thêm khi phát triển các module Analytics...)
+### 2.9. Bookings & Pricing
+- `POST /api/v1/bookings/hold`: Giữ phòng (Payload: `{ roomId, checkIn, checkOut, guests }`). Trả về `{ holdId, expiresAt }`.
+- `POST /api/v1/bookings/calculate-price`: Tính giá tiền, áp dụng PricingRule và Coupon (Payload: `{ roomId, checkIn, checkOut, guests, discountCode }`).
+- `POST /api/v1/bookings`: Xác nhận đặt phòng (Payload: `{ holdId, paymentMethod, discountCode }`).
+- `POST /api/v1/bookings/:id/cancel`: Hủy phòng và tính tiền hoàn lại.
+
+### 2.10. Wishlist
+- `GET /api/v1/wishlist`: Lấy danh sách khách sạn đã lưu của User.
+- `POST /api/v1/wishlist`: Lưu khách sạn (Payload: `{ hotelId }`).
+- `DELETE /api/v1/wishlist/:hotelId`: Bỏ lưu khách sạn.
+
+### 2.11. Coupons & Pricing Rules
+- `GET /api/v1/coupons`: Lấy danh sách mã giảm giá.
+- `POST /api/v1/coupons`: Tạo mã giảm giá (Host/Admin).
+- `PATCH /api/v1/coupons/:id` / `DELETE /api/v1/coupons/:id`: Cập nhật/Xóa mã giảm giá.
+- `GET /api/v1/pricing-rules?hotelId=...`: Lấy danh sách luật giá động.
+- `POST /api/v1/pricing-rules`: Tạo luật giá động (Host/Admin).
+- `PATCH /api/v1/pricing-rules/:id` / `DELETE /api/v1/pricing-rules/:id`: Cập nhật/Xóa luật giá động.
+
+### 2.12. Cancellation Policies
+- `GET /api/v1/cancellation-policies?hotelId=...`: Lấy danh sách chính sách hủy của khách sạn.
+- `POST /api/v1/cancellation-policies`: Tạo chính sách hủy mới.
+- `PATCH /api/v1/cancellation-policies/:id` / `DELETE /api/v1/cancellation-policies/:id`: Cập nhật/Xóa chính sách.
+
+### 2.13. Host Features (Booking Management & Analytics)
+- `GET /api/v1/host/bookings`: Lấy danh sách bookings thuộc về khách sạn của Host.
+- `PATCH /api/v1/host/bookings/:id/status`: Host cập nhật trạng thái booking (CHECKED_IN, CHECKED_OUT, v.v).
+- `GET /api/v1/host/analytics/revenue?hotelId=...&startDate=...&endDate=...`: Thống kê tổng doanh thu theo giai đoạn.
+- `GET /api/v1/host/analytics/occupancy?hotelId=...&startDate=...&endDate=...`: Thống kê tỉ lệ lấp đầy theo giai đoạn.
