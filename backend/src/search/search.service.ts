@@ -14,9 +14,13 @@ export class SearchService {
   async search(query: SearchQueryDto) {
     const { checkIn, checkOut, guests, minPrice, maxPrice, q, page = 1, limit = 10 } = query;
     const offset = (page - 1) * limit;
-    
     let vectorOrderBy = '';
     let vectorScore = '0 AS score';
+    let qFilter = '';
+    const checkInDate = (checkIn ? new Date(checkIn) : new Date(new Date().setHours(14,0,0,0))).toISOString();
+    const checkOutDate = (checkOut ? new Date(checkOut) : new Date(new Date().setDate(new Date().getDate() + 1))).toISOString();
+    const params: any[] = [checkInDate, checkOutDate, guests];
+
     if (q) {
       try {
         const vector = await this.vectorService.getEmbedding(q);
@@ -26,6 +30,8 @@ export class SearchService {
         vectorScore = `1 - (h."searchVector" <=> '${vectorStr}'::vector) AS score`;
       } catch (err) {
         // Fallback if vector service is down
+        params.push(`%${q}%`);
+        qFilter = `AND (h.name ILIKE $${params.length} OR h.city ILIKE $${params.length} OR h.address ILIKE $${params.length} OR h.country ILIKE $${params.length})`;
       }
     }
 
@@ -35,14 +41,8 @@ export class SearchService {
     const now = new Date();
     const defaultCheckIn = new Date(now);
     defaultCheckIn.setHours(14, 0, 0, 0);
-    const defaultCheckOut = new Date(now);
-    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
-    defaultCheckOut.setHours(12, 0, 0, 0);
+    // Date calculation moved up
 
-    const finalCheckIn = checkIn ? new Date(checkIn) : defaultCheckIn;
-    const finalCheckOut = checkOut ? new Date(checkOut) : defaultCheckOut;
-    const checkInDate = finalCheckIn.toISOString();
-    const checkOutDate = finalCheckOut.toISOString();
 
     const baseSql = `
       WITH AvailableRooms AS (
@@ -80,6 +80,7 @@ export class SearchService {
       FROM "Hotel" h
       INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
       WHERE h.status = 'APPROVED'
+      ${qFilter}
       GROUP BY h.id, h.name, h.address, h.city, h.country, h."starRating"
       ${vectorOrderBy}
       LIMIT ${limit} OFFSET ${offset}
@@ -91,11 +92,12 @@ export class SearchService {
       FROM "Hotel" h
       INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
       WHERE h.status = 'APPROVED'
+      ${qFilter}
     `;
 
     const [results, countResult] = await Promise.all([
-      this.prisma.$queryRawUnsafe<any[]>(rawSql, checkInDate, checkOutDate, guests),
-      this.prisma.$queryRawUnsafe<any[]>(countSql, checkInDate, checkOutDate, guests)
+      this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params),
+      this.prisma.$queryRawUnsafe<any[]>(countSql, ...params)
     ]);
 
     const total = countResult[0]?.total || 0;
