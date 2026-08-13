@@ -37,6 +37,7 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
         name,
         address,
         city,
+        country: 'Việt Nam',
         description,
         amenityIds: selectedAmenityIds,
         coverImage,
@@ -44,8 +45,8 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
       });
       onSuccess();
     } catch (err: any) {
-      // Mock success nếu BE chưa chạy
-      onSuccess();
+      // Báo lỗi thực tế thay vì tự động onSuccess() (Fix BUG-008)
+      setErrorMsg(err?.message || 'Không thể tạo khách sạn mới. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }

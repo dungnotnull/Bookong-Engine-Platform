@@ -14,8 +14,9 @@ export class CreateHotelDto {
   @IsString()
   city!: string;
 
+  @IsOptional()
   @IsString()
-  country!: string;
+  country?: string;
 
   @IsOptional()
   @IsNumber()
@@ -26,6 +27,11 @@ export class CreateHotelDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  amenityIds?: string[];
 
   @IsOptional()
   @IsString()
@@ -67,6 +73,11 @@ export class UpdateHotelDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  amenityIds?: string[];
 
   @IsOptional()
   @IsString()
