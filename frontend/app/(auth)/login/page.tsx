@@ -7,7 +7,6 @@ import { useAuthStore } from '@/stores/use-auth-store';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserRole } from '@/types/user';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +14,6 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('USER');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -31,16 +29,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Gọi API POST /api/v1/auth/login trực tiếp tới NestJS Backend
-      const res = await apiClient.post('/auth/login', { email, password, role });
+      // Gọi API POST /api/v1/auth/login
+      const res = await apiClient.post('/auth/login', { email, password });
       
-      // Backend bọc dữ liệu trong { success: true, data: { accessToken, user } }
       const payload = (res as any)?.data || res;
       const token = payload?.accessToken || payload?.token;
       const user = payload?.user;
 
       if (token && user) {
         setAuth(token, user);
+        
+        // Tự động phân hướng chuyển màn hình dựa vào role của user trong cơ sở dữ liệu
         if (user.role === 'ADMIN') {
           router.push('/admin/dashboard');
         } else if (user.role === 'HOST') {
@@ -52,7 +51,6 @@ export default function LoginPage() {
         setErrorMsg('Dữ liệu phản hồi từ máy chủ không đúng định dạng.');
       }
     } catch (err: any) {
-      // Hiển thị lỗi 401 Unauthorized thật từ Backend API
       const message =
         err?.message === 'Invalid credentials'
           ? 'Địa chỉ Email hoặc Mật khẩu không chính xác.'
@@ -68,29 +66,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-float p-8 border border-gray-100">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-black text-booking-navy">Đăng nhập Bookong</h1>
-          <p className="text-xs text-gray-500 mt-1">Quản lý đơn đặt phòng và tài sản của bạn dễ dàng</p>
-        </div>
-
-        {/* Tab Chọn Vai trò */}
-        <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-          <button
-            type="button"
-            onClick={() => setRole('USER')}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-smooth ${
-              role === 'USER' ? 'bg-white text-booking-navy shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            Khách đặt phòng
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('HOST')}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-smooth ${
-              role === 'HOST' ? 'bg-white text-booking-navy shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            Chủ khách sạn (Host)
-          </button>
+          <p className="text-xs text-gray-500 mt-1">Đăng nhập tài khoản để truy cập hệ thống theo đúng phân quyền</p>
         </div>
 
         {errorMsg && (
@@ -119,7 +95,7 @@ export default function LoginPage() {
           />
 
           <Button type="submit" variant="action" className="w-full font-bold py-2.5" isLoading={isLoading}>
-            Đăng nhập với vai trò {role}
+            Đăng nhập ngay
           </Button>
         </form>
 

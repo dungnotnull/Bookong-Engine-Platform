@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Globe, Menu, User, LogOut } from 'lucide-react';
+import { Globe, Menu, User, LogOut, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/use-auth-store';
-import { cn } from '@/lib/utils';
 
 export function NavbarSticky() {
   const pathname = usePathname();
@@ -34,14 +33,14 @@ export function NavbarSticky() {
         </Link>
 
         {/* Center Pill Quick Search Trigger */}
-        <div className="hidden md:flex items-center gap-4 border border-border rounded-full py-2 px-4 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-xs font-bold text-main">
+        <Link href="/search" className="hidden md:flex items-center gap-4 border border-border rounded-full py-2 px-4 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-xs font-bold text-main">
           <span className="px-2 border-r border-border-light">Địa điểm bất kỳ</span>
           <span className="px-2 border-r border-border-light">Tuần bất kỳ</span>
           <span className="px-2 text-muted font-normal">Thêm khách</span>
           <div className="bg-rausch p-2 rounded-full text-white">
-            <User className="w-3.5 h-3.5" />
+            <Search className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
-        </div>
+        </Link>
 
         {/* Right Menu Utilities */}
         <div className="flex items-center gap-2">
@@ -81,7 +80,7 @@ export function NavbarSticky() {
                       <p className="text-muted text-[11px] font-normal">{user.email}</p>
                     </div>
                     <Link
-                      href="/user/bookings"
+                      href="/bookings"
                       onClick={() => setIsMenuOpen(false)}
                       className="block px-4 py-2.5 hover:bg-surface"
                     >
@@ -90,11 +89,11 @@ export function NavbarSticky() {
 
                     {(user.role === 'HOST' || user.role === 'ADMIN') && (
                       <Link
-                        href="/host/dashboard"
+                        href={user.role === 'ADMIN' ? '/admin/dashboard' : '/host/dashboard'}
                         onClick={() => setIsMenuOpen(false)}
                         className="block px-4 py-2.5 hover:bg-surface text-rausch font-bold"
                       >
-                        Host Portal Dashboard
+                        {user.role === 'ADMIN' ? 'Admin Portal Dashboard' : 'Host Portal Dashboard'}
                       </Link>
                     )}
 
