@@ -45,9 +45,6 @@
 
 ## 🏗 System Architecture
 
-
-```
-
 ```
                    ┌─────────────────────────┐
                    │   Next.js 14 Web App    │
@@ -62,8 +59,6 @@
        ┌─────────────────┘           └────────────────┐
        │ gRPC / REST                                  │ SQL / Vector
        ▼                                              ▼
-
-```
 
 ┌──────────────────────┐                     ┌─────────────────────────┐
 │ Python AI Service    │                     │  PostgreSQL + pgvector  │
