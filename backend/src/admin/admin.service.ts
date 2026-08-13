@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateHotelStatusDto, UpdateUserRoleDto } from './dto/admin.dto';
+import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
+import { HotelStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -21,17 +23,30 @@ export class AdminService {
     };
   }
 
-  async getAllUsers() {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getAllUsers(query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.user.count()
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 
   async updateUserRole(id: string, data: UpdateUserRoleDto) {
@@ -57,14 +72,29 @@ export class AdminService {
     return this.prisma.user.delete({ where: { id } });
   }
 
-  async getHotels(status?: 'PENDING' | 'APPROVED' | 'REJECTED') {
-    return this.prisma.hotel.findMany({
-      where: status ? { status } : undefined,
-      include: {
-        host: { select: { email: true, fullName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getHotels(query: PaginationQueryDto & { status?: HotelStatus }) {
+    const { page = 1, limit = 10, status } = query;
+    const offset = (page - 1) * limit;
+
+    const where = status ? { status } : undefined;
+
+    const [data, total] = await Promise.all([
+      this.prisma.hotel.findMany({
+        where,
+        include: {
+          host: { select: { email: true, fullName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.hotel.count({ where })
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 
   async updateHotelStatus(id: string, data: UpdateHotelStatusDto) {

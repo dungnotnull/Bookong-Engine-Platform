@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { HotelsService } from './hotels.service';
 import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @Controller('hotels')
 export class HotelsController {
@@ -19,13 +20,13 @@ export class HotelsController {
   @Get('my-hotels')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.HOST)
-  findMyHotels(@Request() req: any) {
-    return this.hotelsService.findMyHotels(req.user.id);
+  findMyHotels(@Request() req: any, @Query() query: PaginationQueryDto) {
+    return this.hotelsService.findMyHotels(req.user.id, query);
   }
 
   @Get()
-  findAll() {
-    return this.hotelsService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.hotelsService.findAll(query);
   }
 
   @Get(':id')

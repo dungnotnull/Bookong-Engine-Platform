@@ -1,26 +1,42 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateBookingStatusDto, AnalyticsQueryDto } from './dto/host.dto';
+import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class HostService {
   constructor(private prisma: PrismaService) {}
 
-  async getBookings(userId: string) {
-    return this.prisma.booking.findMany({
-      where: {
-        room: {
-          hotel: {
-            hostId: userId
-          }
+  async getBookings(userId: string, query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
+
+    const where = {
+      room: {
+        hotel: {
+          hostId: userId
         }
-      },
-      include: {
-        room: true,
-        user: { select: { id: true, email: true, fullName: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+      }
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        include: {
+          room: true,
+          user: { select: { id: true, email: true, fullName: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.booking.count({ where })
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 
   async updateBookingStatus(bookingId: string, userId: string, data: UpdateBookingStatusDto) {

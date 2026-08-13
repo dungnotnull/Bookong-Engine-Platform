@@ -18,6 +18,9 @@ import { CouponsModule } from './coupons/coupons.module';
 import { PricingRulesModule } from './pricing-rules/pricing-rules.module';
 import { CancellationPoliciesModule } from './cancellation-policies/cancellation-policies.module';
 import { HostModule } from './host/host.module';
+import { UploadModule } from './upload/upload.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -42,6 +45,11 @@ import { HostModule } from './host/host.module';
     PricingRulesModule,
     CancellationPoliciesModule,
     HostModule,
+    UploadModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

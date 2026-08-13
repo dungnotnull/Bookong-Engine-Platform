@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from '../vector/vector.service';
 import { SearchQueryDto } from './dto/search.dto';
+import { buildPaginationMeta } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class SearchService {
@@ -11,16 +12,17 @@ export class SearchService {
   ) {}
 
   async search(query: SearchQueryDto) {
-    const { checkIn, checkOut, guests, minPrice, maxPrice, q } = query;
+    const { checkIn, checkOut, guests, minPrice, maxPrice, q, page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
     
-    let vectorFilter = '';
+    let vectorOrderBy = '';
     let vectorScore = '0 AS score';
     if (q) {
       try {
         const vector = await this.vectorService.getEmbedding(q);
         const vectorStr = `[${vector.join(',')}]`;
         // Use pgvector cosine distance `<=>` or L2 `<->`
-        vectorFilter = `ORDER BY h."searchVector" <-> '${vectorStr}'::vector ASC LIMIT 50`;
+        vectorOrderBy = `ORDER BY h."searchVector" <-> '${vectorStr}'::vector ASC`;
         vectorScore = `1 - (h."searchVector" <=> '${vectorStr}'::vector) AS score`;
       } catch (err) {
         // Fallback if vector service is down
@@ -30,9 +32,19 @@ export class SearchService {
     const minPriceFilter = minPrice ? `AND r."basePrice" >= ${minPrice}` : '';
     const maxPriceFilter = maxPrice ? `AND r."basePrice" <= ${maxPrice}` : '';
 
-    // We use a raw query to calculate availability across rooms
-    // We group by Hotel to return Hotel with Available Rooms
-    const rawSql = `
+    const now = new Date();
+    const defaultCheckIn = new Date(now);
+    defaultCheckIn.setHours(14, 0, 0, 0);
+    const defaultCheckOut = new Date(now);
+    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
+    defaultCheckOut.setHours(12, 0, 0, 0);
+
+    const finalCheckIn = checkIn ? new Date(checkIn) : defaultCheckIn;
+    const finalCheckOut = checkOut ? new Date(checkOut) : defaultCheckOut;
+    const checkInDate = finalCheckIn.toISOString();
+    const checkOutDate = finalCheckOut.toISOString();
+
+    const baseSql = `
       WITH AvailableRooms AS (
         SELECT r.id, r."hotelId", r.name, r.type, r."basePrice", r.capacity, r.quantity,
                (r.quantity - COALESCE(b.booked_count, 0)) AS available_quantity
@@ -50,6 +62,10 @@ export class SearchService {
           ${maxPriceFilter}
           AND (r.quantity - COALESCE(b.booked_count, 0)) > 0
       )
+    `;
+
+    const rawSql = `
+      ${baseSql}
       SELECT h.id as "id", h.name as "name", h.address, h.city, h.country, h."starRating",
              ${vectorScore},
              json_agg(
@@ -65,29 +81,28 @@ export class SearchService {
       INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
       WHERE h.status = 'APPROVED'
       GROUP BY h.id, h.name, h.address, h.city, h.country, h."starRating"
-      ${vectorFilter}
+      ${vectorOrderBy}
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
-    const now = new Date();
-    const defaultCheckIn = new Date(now);
-    defaultCheckIn.setHours(14, 0, 0, 0);
-    const defaultCheckOut = new Date(now);
-    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
-    defaultCheckOut.setHours(12, 0, 0, 0);
+    const countSql = `
+      ${baseSql}
+      SELECT COUNT(DISTINCT h.id)::int as total
+      FROM "Hotel" h
+      INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
+      WHERE h.status = 'APPROVED'
+    `;
 
-    const finalCheckIn = checkIn ? new Date(checkIn) : defaultCheckIn;
-    const finalCheckOut = checkOut ? new Date(checkOut) : defaultCheckOut;
+    const [results, countResult] = await Promise.all([
+      this.prisma.$queryRawUnsafe<any[]>(rawSql, checkInDate, checkOutDate, guests),
+      this.prisma.$queryRawUnsafe<any[]>(countSql, checkInDate, checkOutDate, guests)
+    ]);
 
-    const checkInDate = finalCheckIn.toISOString();
-    const checkOutDate = finalCheckOut.toISOString();
-
-    const results = await this.prisma.$queryRawUnsafe(
-      rawSql,
-      checkInDate,
-      checkOutDate,
-      guests
-    );
-
-    return results;
+    const total = countResult[0]?.total || 0;
+    
+    return {
+      data: results,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 }

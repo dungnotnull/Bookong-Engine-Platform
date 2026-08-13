@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role, HotelStatus } from '@prisma/client';
 import { UpdateHotelStatusDto, UpdateUserRoleDto } from './dto/admin.dto';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
@@ -18,8 +19,8 @@ export class AdminController {
   }
 
   @Get('users')
-  async getAllUsers() {
-    const users = await this.adminService.getAllUsers();
+  async getAllUsers(@Query() query: PaginationQueryDto) {
+    const users = await this.adminService.getAllUsers(query);
     return { success: true, data: users };
   }
 
@@ -39,8 +40,8 @@ export class AdminController {
   }
 
   @Get('hotels')
-  async getHotels(@Query('status') status?: HotelStatus) {
-    const hotels = await this.adminService.getHotels(status);
+  async getHotels(@Query() query: PaginationQueryDto & { status?: HotelStatus }) {
+    const hotels = await this.adminService.getHotels(query);
     return { success: true, data: hotels };
   }
 

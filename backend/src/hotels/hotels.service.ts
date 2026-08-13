@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from '../vector/vector.service';
 import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
+import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class HotelsService {
@@ -27,14 +28,44 @@ export class HotelsService {
     return hotel;
   }
 
-  async findAll() {
-    return this.prisma.hotel.findMany({
-      where: { status: 'APPROVED' }
-    });
+  async findAll(query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.hotel.findMany({
+        where: { status: 'APPROVED' },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.prisma.hotel.count({ where: { status: 'APPROVED' } })
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 
-  async findMyHotels(hostId: string) {
-    return this.prisma.hotel.findMany({ where: { hostId } });
+  async findMyHotels(hostId: string, query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.hotel.findMany({
+        where: { hostId },
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.prisma.hotel.count({ where: { hostId } })
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 
   async findOne(id: string) {

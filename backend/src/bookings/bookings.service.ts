@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { HoldRoomDto, SubmitBookingDto, CalculatePriceDto } from './dto/booking.dto';
+import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -233,19 +234,32 @@ export class BookingsService {
     });
   }
 
-  async getMyTrips(userId: string) {
-    return this.prisma.booking.findMany({
-      where: { userId },
-      include: {
-        room: {
-          include: {
-            hotel: true,
+  async getMyTrips(userId: string, query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const offset = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: { userId },
+        include: {
+          room: {
+            include: {
+              hotel: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.booking.count({ where: { userId } })
+    ]);
+
+    return {
+      data,
+      meta: buildPaginationMeta(total, page, limit)
+    };
   }
 }

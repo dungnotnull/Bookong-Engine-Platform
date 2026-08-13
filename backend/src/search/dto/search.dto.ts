@@ -1,7 +1,8 @@
 import { IsString, IsOptional, IsDateString, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
-export class SearchQueryDto {
+export class SearchQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   q?: string;

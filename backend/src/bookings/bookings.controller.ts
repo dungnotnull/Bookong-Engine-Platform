@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { HoldRoomDto, SubmitBookingDto, CalculatePriceDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @Controller('bookings')
 export class BookingsController {
@@ -14,8 +15,8 @@ export class BookingsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('my-trips')
-  async getMyTrips(@Request() req: any) {
-    return this.bookingsService.getMyTrips(req.user.id);
+  async getMyTrips(@Request() req: any, @Query() query: PaginationQueryDto) {
+    return this.bookingsService.getMyTrips(req.user.id, query);
   }
 
   @Post('calculate-price')

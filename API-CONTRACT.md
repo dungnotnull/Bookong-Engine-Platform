@@ -6,8 +6,11 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 ## 1. Cơ bản (Base)
 - Base URL: `/api/v1`
 - Chuẩn hóa Response chung:
-  - Success: `{ "success": true, "data": { ... }, "meta": { ... } }`
+  - Success (Single Object): `{ "success": true, "data": { ... } }`
+  - Success (Paginated List): `{ "success": true, "data": [ ... ], "meta": { "page": 1, "limit": 10, "total": 100, "totalPages": 10, "hasNextPage": true } }`
   - Error: `{ "success": false, "errorCode": "ERR_CODE", "message": "Chi tiết lỗi" }`
+
+**Lưu ý:** Các API trả về danh sách đều hỗ trợ Query Params `?page=1&limit=10` (mặc định page=1, limit=10).
 
 ---
 
@@ -15,7 +18,7 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 
 ### 2.1. Search & Filter
 `GET /api/v1/search`
-- **Query Params**: `q` (string), `checkIn` (ISO Date), `checkOut` (ISO Date), `guests` (number), `minPrice`, `maxPrice`, `amenities` (array).
+- **Query Params**: `q` (string), `checkIn` (ISO Date), `checkOut` (ISO Date), `guests` (number), `minPrice`, `maxPrice`, `page`, `limit`.
 - **Response Data**: Array các object Hotel kèm Room thỏa mãn điều kiện.
   ```json
   [
@@ -60,6 +63,7 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 
 ### 2.6. Chuyến đi của tôi (My Trips)
 `GET /api/v1/bookings/my-trips`
+- **Query Params**: `page`, `limit`
 - **Response Data**:
   ```json
   [
@@ -93,6 +97,7 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 
 ### 2.8. Master Data - Hotels & Rooms
 - `GET /api/v1/hotels` & `GET /api/v1/hotels/my-hotels`:
+  - **Query Params**: `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "name": "str", "city": "str", "status": "APPROVED", "coverImage": "str" } ]`
 - `GET /api/v1/hotels/:id`:
   - **Response Data**: `{ "id": "uuid", "name": "str", "description": "str", "address": "str", "images": ["url1"], "hotelAmenities": [...] }`
@@ -108,14 +113,17 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
 - `GET /api/v1/admin/dashboard/stats`:
   - **Response Data**: `{ "totalUsers": 100, "totalHotels": 50, "pendingHotels": 5, "totalRooms": 200, "totalGMV": 50000 }`
 - `GET /api/v1/admin/users`:
+  - **Query Params**: `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "email": "a@b.c", "role": "USER", "createdAt": "ISO Date" } ]`
 - `GET /api/v1/admin/hotels`:
+  - **Query Params**: `status` (PENDING|APPROVED|REJECTED), `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "name": "str", "host": { "email": "a@b.c" }, "status": "PENDING" } ]`
 
 ---
 
 ### 2.10. Host Analytics
 - `GET /api/v1/host/bookings`:
+  - **Query Params**: `page`, `limit`
   - **Response Data**: `[ { "id": "uuid", "userId": "uuid", "roomId": "uuid", "status": "CONFIRMED", "totalPrice": 100, "user": { "email": "a@b.c" } } ]`
 - `GET /api/v1/host/analytics/revenue`:
   - **Response Data**: `{ "totalRevenue": 15000, "bookingsCount": 45 }`
@@ -133,3 +141,19 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
   - **Response Data**: `[ { "id": "uuid", "name": "Weekend Surge", "multiplier": 1.2, "dayOfWeek": 6 } ]`
 - `GET /api/v1/cancellation-policies`:
   - **Response Data**: `[ { "id": "uuid", "daysBeforeCheckIn": 3, "penaltyPercentage": 50 } ]`
+
+---
+
+### 2.12. Upload
+`POST /api/v1/upload/image`
+- **Request Type**: `multipart/form-data`
+- **Payload**: field `file` (chứa file ảnh .jpg, .png, .webp, max 5MB). Yêu cầu Token (Header `Authorization: Bearer <token>`).
+- **Response Data**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "url": "http://localhost:3000/uploads/filename.jpg"
+    }
+  }
+  ```
