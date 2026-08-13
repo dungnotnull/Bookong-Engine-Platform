@@ -1,9 +1,9 @@
-import { Controller, Get, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role, HotelStatus } from '@prisma/client';
-import { UpdateHotelStatusDto, UpdateUserRoleDto } from './dto/admin.dto';
+import { UpdateHotelStatusDto, UpdateUserRoleDto, ApproveHotelDto, UpdateUserStatusDto, CreateAdminDto } from './dto/admin.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -12,7 +12,7 @@ import { PaginationQueryDto } from '../common/dto/pagination.dto';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get('dashboard/stats')
+  @Get('analytics')
   async getDashboardStats() {
     const stats = await this.adminService.getDashboardStats();
     return { success: true, data: stats };
@@ -39,6 +39,12 @@ export class AdminController {
     return { success: true, message: 'User deleted successfully' };
   }
 
+  @Get('hotels/pending')
+  async getPendingHotels(@Query() query: PaginationQueryDto) {
+    const hotels = await this.adminService.getHotels({ ...query, status: HotelStatus.PENDING });
+    return { success: true, ...hotels };
+  }
+
   @Get('hotels')
   async getHotels(@Query() query: PaginationQueryDto & { status?: HotelStatus }) {
     const hotels = await this.adminService.getHotels(query);
@@ -50,7 +56,32 @@ export class AdminController {
     @Param('id') id: string,
     @Body() data: UpdateHotelStatusDto,
   ) {
-    const hotel = await this.adminService.updateHotelStatus(id, data);
+    const hotel = await this.adminService.updateHotelStatus(id, data.status);
     return { success: true, data: hotel };
+  }
+
+  @Patch('hotels/:id/approve')
+  async approveHotel(
+    @Param('id') id: string,
+    @Body() data: ApproveHotelDto,
+  ) {
+    const status = data.isApproved ? HotelStatus.APPROVED : HotelStatus.REJECTED;
+    const hotel = await this.adminService.updateHotelStatus(id, status);
+    return { success: true, data: hotel };
+  }
+
+  @Patch('users/:id/status')
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() data: UpdateUserStatusDto,
+  ) {
+    const user = await this.adminService.updateUserStatus(id, data.isBanned);
+    return { success: true, data: user };
+  }
+
+  @Post('users')
+  async createAdmin(@Body() data: CreateAdminDto) {
+    const admin = await this.adminService.createAdmin(data);
+    return { success: true, data: admin };
   }
 }

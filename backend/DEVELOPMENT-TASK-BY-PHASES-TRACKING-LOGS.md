@@ -103,6 +103,7 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
 - [x] **5.2 Analytics API for Host**
   - [x] API Lấy Tổng Doanh Thu (Sum Total Price của các booking Confirmed/Completed) theo tháng.
   - [x] API Tính Tỉ lệ lấp đầy (Occupancy Rate = Số đêm đã book / Tổng số đêm có thể book của khách sạn) trong một khoảng thời gian.
+  - [x] Cập nhật API `GET /host/analytics` tổng hợp (total hotels, total rooms, monthly bookings, average occupancy) cho Dashboard.
 - [x] **5.3 Analytics API for Admin**
   - [x] API Lấy GMV toàn sàn (Tạm thời mock, chờ module Booking).
   - [x] Thống kê số lượng User đăng ký mới, số lượng Hotel Active.
@@ -110,8 +111,15 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
   - [!] **CONSTRAINT**: Host chỉ có quyền lấy danh sách booking của khách sạn do mình sở hữu.
   - [x] `GET /host/bookings`: Lấy danh sách booking của khách sạn (Filter theo status, date).
   - [x] `PATCH /host/bookings/:id/status`: Cập nhật trạng thái booking (ví dụ: ACCEPTED, CHECKED_IN, CHECKED_OUT).
-  - [x] `GET /admin/users` & `PATCH /admin/users/:id/role`: Quản lý Role của User.
-  - [x] `GET /admin/hotels` & `PATCH /admin/hotels/:id/status`: Phê duyệt khách sạn mới lên sàn.
+  - [x] Quản lý User (Admin):
+    - `GET /admin/users` (Lấy danh sách phân trang)
+    - `PATCH /admin/users/:id/role` (Đổi role)
+    - `PATCH /admin/users/:id/status` (Cập nhật DB Schema thêm `isBanned`, API khóa/mở khóa)
+    - `POST /admin/users` (API tạo tài khoản Admin mới)
+  - [x] Khởi tạo tài khoản System Admin mặc định: Cập nhật `onModuleInit` trong `UsersService` tự động tạo `admin@bookong.com`.
+  - [x] Phê duyệt Khách sạn (Admin):
+    - `GET /admin/hotels/pending` (Lấy danh sách KS chờ duyệt)
+    - `PATCH /admin/hotels/:id/approve` (API duyệt/từ chối khách sạn)
 
 ## Phase 6: Advanced & Polish
 - [ ] **6.1 Verified Reviews System**
