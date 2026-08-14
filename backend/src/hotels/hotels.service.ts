@@ -45,23 +45,74 @@ export class HotelsService {
     return hotel;
   }
 
-  async findAll(query: PaginationQueryDto) {
-    const { page = 1, limit = 10 } = query;
-    const offset = (page - 1) * limit;
+  async findAll(query: any) {
+    const { page = 1, limit = 10, category, minPrice, maxPrice } = query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const where: any = { status: 'APPROVED' };
+
+    // Handle categories
+    if (category && category !== 'all') {
+      switch (category) {
+        case 'hotel':
+          where.OR = [{ name: { contains: 'khách sạn', mode: 'insensitive' } }, { name: { contains: 'hotel', mode: 'insensitive' } }];
+          break;
+        case 'resort':
+          where.OR = [{ name: { contains: 'resort', mode: 'insensitive' } }, { name: { contains: 'khu nghỉ dưỡng', mode: 'insensitive' } }];
+          break;
+        case 'homestay':
+          where.OR = [{ name: { contains: 'homestay', mode: 'insensitive' } }];
+          break;
+        case 'villa':
+          where.OR = [{ name: { contains: 'villa', mode: 'insensitive' } }, { name: { contains: 'biệt thự', mode: 'insensitive' } }];
+          break;
+        case 'apartment':
+          where.OR = [{ name: { contains: 'căn hộ', mode: 'insensitive' } }, { name: { contains: 'apartment', mode: 'insensitive' } }];
+          break;
+        case 'beach':
+          where.OR = [
+            { address: { contains: 'biển', mode: 'insensitive' } },
+            { description: { contains: 'biển', mode: 'insensitive' } },
+            { description: { contains: 'beach', mode: 'insensitive' } }
+          ];
+          break;
+        case 'pool':
+          where.hotelAmenities = { some: { amenity: { name: { contains: 'hồ bơi', mode: 'insensitive' } } } };
+          break;
+        case 'luxury':
+          where.starRating = { gte: 4 };
+          break;
+        case 'nature':
+          where.OR = [
+            { description: { contains: 'thiên nhiên', mode: 'insensitive' } },
+            { description: { contains: 'núi', mode: 'insensitive' } },
+            { description: { contains: 'forest', mode: 'insensitive' } }
+          ];
+          break;
+      }
+    }
+
+    // Handle price filters by checking room basePrice
+    if (minPrice || maxPrice) {
+      where.rooms = { some: { basePrice: {} } };
+      if (minPrice) where.rooms.some.basePrice.gte = Number(minPrice);
+      if (maxPrice) where.rooms.some.basePrice.lte = Number(maxPrice);
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.hotel.findMany({
-        where: { status: 'APPROVED' },
+        where,
         skip: offset,
-        take: limit,
-        orderBy: { createdAt: 'desc' }
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        include: { rooms: true } // Include rooms to get price info on frontend if needed
       }),
-      this.prisma.hotel.count({ where: { status: 'APPROVED' } })
+      this.prisma.hotel.count({ where })
     ]);
 
     return {
       data,
-      meta: buildPaginationMeta(total, page, limit)
+      meta: buildPaginationMeta(total, Number(page), Number(limit))
     };
   }
 

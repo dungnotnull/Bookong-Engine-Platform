@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { HotelsService } from './hotels.service';
-import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
+import { CreateHotelDto, UpdateHotelDto, HotelQueryDto } from './dto/hotel.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
@@ -25,7 +25,7 @@ export class HotelsController {
   }
 
   @Get()
-  findAll(@Query() query: PaginationQueryDto) {
+  findAll(@Query() query: HotelQueryDto) {
     return this.hotelsService.findAll(query);
   }
 
