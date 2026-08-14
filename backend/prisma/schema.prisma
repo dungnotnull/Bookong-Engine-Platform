@@ -121,6 +121,7 @@ model Booking {
   checkIn       DateTime
   checkOut      DateTime
   guests        Int
+  roomQuantity  Int           @default(1)
   totalPrice    Float
   status        BookingStatus @default(PENDING_PAYMENT)
   paymentMethod String?

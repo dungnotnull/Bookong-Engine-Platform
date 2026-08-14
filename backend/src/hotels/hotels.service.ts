@@ -90,7 +90,7 @@ export class HotelsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, checkIn?: string, checkOut?: string) {
     const hotel = await this.prisma.hotel.findUnique({
       where: { id },
       include: { 
@@ -99,6 +99,33 @@ export class HotelsService {
       }
     });
     if (!hotel) throw new NotFoundException('Hotel not found');
+
+    if (checkIn && checkOut) {
+      const ci = new Date(checkIn);
+      const co = new Date(checkOut);
+      
+      if (ci < co) {
+        const availableRooms: typeof hotel.rooms = [];
+        for (const room of hotel.rooms) {
+          const overlapping = await this.prisma.booking.aggregate({
+            _sum: { roomQuantity: true },
+            where: {
+              roomId: room.id,
+              status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
+              OR: [
+                { checkIn: { lt: co }, checkOut: { gt: ci } }
+              ]
+            }
+          });
+          const bookedRooms = overlapping._sum?.roomQuantity || 0;
+          if (room.quantity - bookedRooms >= 1) {
+            availableRooms.push(room);
+          }
+        }
+        hotel.rooms = availableRooms;
+      }
+    }
+
     return hotel;
   }
 

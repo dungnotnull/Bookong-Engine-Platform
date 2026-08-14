@@ -14,6 +14,11 @@ export class HoldRoomDto {
   @IsInt()
   @Min(1)
   guests!: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  roomQuantity?: number;
 }
 
 export class CalculatePriceDto extends HoldRoomDto {

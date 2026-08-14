@@ -41,10 +41,10 @@ export class RoomsService {
       
       const rawSql = `
         SELECT r.*,
-               (r.quantity - COALESCE(b.booked_count, 0)) AS "availableQuantity"
+               (r.quantity - COALESCE(b.booked_count, 0))::integer AS "availableQuantity"
         FROM "Room" r
         LEFT JOIN (
-          SELECT "roomId", COUNT(id) as booked_count
+          SELECT "roomId", COUNT(id)::integer as booked_count
           FROM "Booking"
           WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
             AND "checkIn" < $3::timestamp

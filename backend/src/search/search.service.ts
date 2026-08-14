@@ -41,7 +41,7 @@ export class SearchService {
           h.city ILIKE $${qIndex} 
           OR h.name ILIKE $${qIndex} 
           OR h.address ILIKE $${qIndex}
-          OR (1 - (h."searchVector" <=> '${vectorStr}'::vector)) > 0.15
+          OR (1 - (h."searchVector" <=> '${vectorStr}'::vector)) > 0.5
         )`;
       } catch (err) {
         vectorOrderBy = ``;
@@ -65,7 +65,7 @@ export class SearchService {
                (r.quantity - COALESCE(b.booked_count, 0)) AS available_quantity
         FROM "Room" r
         LEFT JOIN (
-          SELECT "roomId", COUNT(id) as booked_count
+          SELECT "roomId", COALESCE(SUM("roomQuantity"), 0) as booked_count
           FROM "Booking"
           WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
             AND "checkIn" < $2::timestamp

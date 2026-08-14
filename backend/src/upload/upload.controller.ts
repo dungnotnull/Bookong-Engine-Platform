@@ -19,10 +19,7 @@ export class UploadController {
     const fileUrl = `http://localhost:${port}/uploads/${file.filename}`;
     
     return {
-      success: true,
-      data: {
-        url: fileUrl,
-      }
+      url: fileUrl,
     };
   }
 }

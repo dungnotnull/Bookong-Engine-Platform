@@ -30,8 +30,8 @@ export class HotelsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.hotelsService.findOne(id);
+  findOne(@Param('id') id: string, @Query('checkIn') checkIn?: string, @Query('checkOut') checkOut?: string) {
+    return this.hotelsService.findOne(id, checkIn, checkOut);
   }
 
   @Patch(':id')

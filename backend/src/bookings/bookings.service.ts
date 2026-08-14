@@ -13,13 +13,14 @@ export class BookingsService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async checkAvailability(roomId: string, checkIn: Date, checkOut: Date, guests: number): Promise<boolean> {
+  async checkAvailability(roomId: string, checkIn: Date, checkOut: Date, guests: number, roomQuantity: number = 1): Promise<boolean> {
     const room = await this.prisma.room.findUnique({ where: { id: roomId } });
     if (!room) throw new BadRequestException('Room not found');
-    if (room.capacity < guests) throw new BadRequestException('Room capacity is not enough');
+    if ((room.capacity * roomQuantity) < guests) throw new BadRequestException('Room capacity is not enough');
 
     // Count overlapping confirmed/pending bookings
-    const overlappingBookings = await this.prisma.booking.count({
+    const overlapping = await this.prisma.booking.aggregate({
+      _sum: { roomQuantity: true },
       where: {
         roomId,
         status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
@@ -29,11 +30,9 @@ export class BookingsService {
       }
     });
 
-    // We also need to count holds in Redis. For simplicity in this demo, 
-    // we assume the Redis holds are small or we just rely on DB check + Redis check.
-    // In a production app, we would scan Redis or track holds in DB.
+    const bookedRooms = overlapping._sum?.roomQuantity || 0;
     
-    return (room.quantity - overlappingBookings) > 0;
+    return (room.quantity - bookedRooms) >= roomQuantity;
   }
 
   async holdRoom(data: HoldRoomDto) {
@@ -42,16 +41,18 @@ export class BookingsService {
     
     if (checkIn >= checkOut) throw new BadRequestException('Check-out must be after check-in');
     
-    const isAvailable = await this.checkAvailability(data.roomId, checkIn, checkOut, data.guests);
-    if (!isAvailable) throw new BadRequestException('Room is not available for these dates');
+    const roomQuantity = data.roomQuantity || 1;
+    const isAvailable = await this.checkAvailability(data.roomId, checkIn, checkOut, data.guests, roomQuantity);
+    if (!isAvailable) throw new BadRequestException('Room is not available for these dates or quantity');
 
     const holdId = uuidv4();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
     await this.cacheManager.set(`hold:${holdId}`, {
       ...data,
+      roomQuantity,
       expiresAt,
-    }, 15 * 60 * 1000); // TTL in ms for cache-manager v5+
+    }, 10 * 60 * 1000); // 10 mins TTL
 
     return { holdId, expiresAt };
   }
@@ -68,13 +69,14 @@ export class BookingsService {
       where: { hotelId: room.hotelId }
     });
 
+    const roomQuantity = data.roomQuantity || 1;
     let basePriceTotal = 0;
     let surgeTotal = 0;
 
     // Loop through each night
     let currentDate = new Date(checkIn);
     while (currentDate < checkOut) {
-      let nightPrice = room.basePrice;
+      let nightPrice = room.basePrice * roomQuantity;
       let nightSurge = 0;
 
       // Apply rules (simplified, takes first matching rule)
@@ -87,7 +89,7 @@ export class BookingsService {
 
       if (rule) {
         if (rule.multiplier) nightSurge += (nightPrice * rule.multiplier) - nightPrice;
-        if (rule.flatFee) nightSurge += rule.flatFee;
+        if (rule.flatFee) nightSurge += (rule.flatFee * roomQuantity);
       }
 
       basePriceTotal += nightPrice;
@@ -135,14 +137,16 @@ export class BookingsService {
       checkIn: holdData.checkIn,
       checkOut: holdData.checkOut,
       guests: holdData.guests,
+      roomQuantity: holdData.roomQuantity,
       discountCode: data.discountCode
     });
 
     // Transaction
     return this.prisma.$transaction(async (tx) => {
-      // 1. Verify availability one last time (simulating SELECT FOR UPDATE via double check)
+      // 1. Verify availability one last time
       const room = await tx.room.findUnique({ where: { id: holdData.roomId } });
-      const overlappingBookings = await tx.booking.count({
+      const overlapping = await tx.booking.aggregate({
+        _sum: { roomQuantity: true },
         where: {
           roomId: holdData.roomId,
           status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
@@ -151,9 +155,10 @@ export class BookingsService {
           ]
         }
       });
+      const bookedRooms = overlapping._sum?.roomQuantity || 0;
 
-      if (!room || (room.quantity - overlappingBookings) <= 0) {
-        throw new BadRequestException('Room is no longer available');
+      if (!room || (room.quantity - bookedRooms) < holdData.roomQuantity) {
+        throw new BadRequestException('Room is no longer available in the requested quantity');
       }
 
       // 2. Create Booking
@@ -164,6 +169,7 @@ export class BookingsService {
           checkIn,
           checkOut,
           guests: holdData.guests,
+          roomQuantity: holdData.roomQuantity,
           totalPrice: priceBreakdown.totalAmount,
           status: 'CONFIRMED',
           paymentMethod: data.paymentMethod
