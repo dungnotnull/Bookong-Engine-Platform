@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api-client';
 interface AdminAnalytics {
   totalGMV: number;
   pendingHotelsCount: number;
+  totalHotels: number;
   totalUsers: number;
 }
 
@@ -29,12 +30,14 @@ export default function AdminDashboardPage() {
         setAnalytics({
           totalGMV: data.totalGMV ?? 0,
           pendingHotelsCount: data.pendingHotelsCount ?? 0,
+          totalHotels: data.totalHotels ?? 0,
           totalUsers: data.totalUsers ?? 0,
         });
       } else {
         setAnalytics({
           totalGMV: 0,
           pendingHotelsCount: 0,
+          totalHotels: 0,
           totalUsers: 0,
         });
       }
@@ -58,7 +61,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
@@ -71,7 +75,7 @@ export default function AdminDashboardPage() {
           isRetrying={isLoading}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-airbnb space-y-2">
             <span className="text-xs font-semibold text-gray-500">Tổng GMV toàn sàn</span>
             <p className="text-2xl font-black text-booking-navy">{formatCurrency(analytics?.totalGMV ?? 0)}</p>
@@ -83,6 +87,14 @@ export default function AdminDashboardPage() {
             <p className="text-2xl font-black text-amber-600">{analytics?.pendingHotelsCount ?? 0}</p>
             <Link href="/admin/hotels-approval" className="text-xs text-booking-blue font-bold hover:underline block">
               Duyệt ngay &rarr;
+            </Link>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-airbnb space-y-2">
+            <span className="text-xs font-semibold text-gray-500">Tổng Khách sạn trên sàn</span>
+            <p className="text-2xl font-black text-slate-900">{analytics?.totalHotels ?? 0}</p>
+            <Link href="/admin/hotels" className="text-xs text-booking-blue font-bold hover:underline block">
+              Quản lý khách sạn &rarr;
             </Link>
           </div>
 

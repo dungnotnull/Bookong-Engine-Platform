@@ -12,7 +12,8 @@ export class SearchService {
   ) {}
 
   async search(query: SearchQueryDto) {
-    const { checkIn, checkOut, guests, minPrice, maxPrice, q, page = 1, limit = 10 } = query;
+    const { checkIn, checkOut, guests, minPrice, maxPrice, starRating, amenities, page = 1, limit = 10 } = query;
+    const q = query.q || query.location;
     const offset = (page - 1) * limit;
     let vectorOrderBy = '';
     let vectorScore = '0 AS score';
@@ -22,16 +23,30 @@ export class SearchService {
     const params: any[] = [checkInDate, checkOutDate, guests || 1];
 
     if (q) {
+      params.push(`%${q}%`);
+      const qIndex = params.length;
+
       try {
         const vector = await this.vectorService.getEmbedding(q);
         const vectorStr = `[${vector.join(',')}]`;
-        // Use pgvector cosine distance `<=>` or L2 `<->`
-        vectorOrderBy = `ORDER BY h."searchVector" <-> '${vectorStr}'::vector ASC`;
-        vectorScore = `1 - (h."searchVector" <=> '${vectorStr}'::vector) AS score`;
+        
+        vectorScore = `GREATEST(
+          COALESCE(1 - (h."searchVector" <=> '${vectorStr}'::vector), 0),
+          CASE WHEN h.city ILIKE $${qIndex} OR h.name ILIKE $${qIndex} OR h.address ILIKE $${qIndex} THEN 1.0 ELSE 0.0 END
+        ) AS score`;
+        
+        vectorOrderBy = `ORDER BY score DESC`;
+        
+        qFilter = `AND (
+          h.city ILIKE $${qIndex} 
+          OR h.name ILIKE $${qIndex} 
+          OR h.address ILIKE $${qIndex}
+          OR (1 - (h."searchVector" <=> '${vectorStr}'::vector)) > 0.15
+        )`;
       } catch (err) {
-        // Fallback if vector service is down
-        params.push(`%${q}%`);
-        qFilter = `AND (h.name ILIKE $${params.length} OR h.city ILIKE $${params.length} OR h.address ILIKE $${params.length} OR h.country ILIKE $${params.length})`;
+        vectorOrderBy = ``;
+        vectorScore = `0 AS score`;
+        qFilter = `AND (h.name ILIKE $${qIndex} OR h.city ILIKE $${qIndex} OR h.address ILIKE $${qIndex} OR h.country ILIKE $${qIndex})`;
       }
     }
 
@@ -64,6 +79,23 @@ export class SearchService {
       )
     `;
 
+    const starRatingFilter = starRating ? `AND h."starRating" >= ${starRating}` : '';
+    let amenitiesFilter = '';
+    if (amenities) {
+      const amenityList = amenities.split(',').map(a => `'${a.trim()}'`).filter(a => a !== "''").join(',');
+      if (amenityList) {
+        const requiredCount = amenities.split(',').filter(a => a.trim() !== '').length;
+        amenitiesFilter = `
+          AND h.id IN (
+            SELECT "hotelId" FROM "HotelAmenity"
+            WHERE "amenityId" IN (${amenityList})
+            GROUP BY "hotelId"
+            HAVING COUNT(DISTINCT "amenityId") >= ${requiredCount}
+          )
+        `;
+      }
+    }
+
     const rawSql = `
       ${baseSql}
       SELECT h.id as "id", h.name as "name", h.address, h.city, h.country, h."starRating",
@@ -81,6 +113,8 @@ export class SearchService {
       INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
       WHERE h.status = 'APPROVED'
       ${qFilter}
+      ${starRatingFilter}
+      ${amenitiesFilter}
       GROUP BY h.id, h.name, h.address, h.city, h.country, h."starRating"
       ${vectorOrderBy}
       LIMIT ${limit} OFFSET ${offset}
@@ -93,6 +127,8 @@ export class SearchService {
       INNER JOIN AvailableRooms ar ON h.id = ar."hotelId"
       WHERE h.status = 'APPROVED'
       ${qFilter}
+      ${starRatingFilter}
+      ${amenitiesFilter}
     `;
 
     const [results, countResult] = await Promise.all([

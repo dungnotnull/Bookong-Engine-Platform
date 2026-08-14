@@ -1,5 +1,12 @@
 import { IsEnum, IsOptional, IsString, IsBoolean, IsEmail, MinLength } from 'class-validator';
 import { Role, HotelStatus } from '@prisma/client';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
+
+export class GetHotelsQueryDto extends PaginationQueryDto {
+  @IsEnum(HotelStatus)
+  @IsOptional()
+  status?: HotelStatus;
+}
 
 export class UpdateUserRoleDto {
   @IsEnum(Role)

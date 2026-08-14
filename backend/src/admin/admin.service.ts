@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateHotelStatusDto, UpdateUserRoleDto } from './dto/admin.dto';
+import { UpdateHotelStatusDto, UpdateUserRoleDto, GetHotelsQueryDto } from './dto/admin.dto';
 import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
 import { HotelStatus } from '@prisma/client';
 
@@ -73,7 +73,7 @@ export class AdminService {
     return this.prisma.user.delete({ where: { id } });
   }
 
-  async getHotels(query: PaginationQueryDto & { status?: HotelStatus }) {
+  async getHotels(query: GetHotelsQueryDto) {
     const { page = 1, limit = 10, status } = query;
     const offset = (page - 1) * limit;
 

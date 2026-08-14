@@ -12,7 +12,9 @@
   }
 }
 
-.airbnb-container {
+/* Global Container Utility Classes (Airbnb & Booking.com style) */
+.airbnb-container,
+.booking-container {
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
@@ -21,7 +23,8 @@
 }
 
 @media (min-width: 768px) {
-  .airbnb-container {
+  .airbnb-container,
+  .booking-container {
     padding-left: 2.5rem;
     padding-right: 2.5rem;
   }

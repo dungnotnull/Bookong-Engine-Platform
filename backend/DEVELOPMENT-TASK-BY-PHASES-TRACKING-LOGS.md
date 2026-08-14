@@ -148,11 +148,11 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
   - [x] Cập nhật API Search & Public Hotels phân trang.
   - [x] Cập nhật API Quản trị (Admin/Host) phân trang.
   - [x] Update `TransformInterceptor` và `API-CONTRACT.md`.
-- [ ] **6.6 Image Upload System (Local Storage)**
-  - [ ] Cài đặt `multer` và các typing liên quan.
-  - [ ] Tạo `UploadModule` và API `POST /upload/image`.
-  - [ ] Cấu hình `ServeStaticModule` để public thư mục `uploads/`.
-  - [ ] Log issue cho Frontend đổi sang dùng Upload API thay vì dùng Unsplash URL.
+- [x] **6.6 Image Upload System (Local Storage)**
+  - [x] Cài đặt `multer` và các typing liên quan.
+  - [x] Tạo `UploadModule` và API `POST /upload/image`.
+  - [x] Cấu hình `ServeStaticModule` để public thư mục `uploads/`.
+  - [x] Log issue cho Frontend đổi sang dùng Upload API thay vì dùng Unsplash URL.
 
 ---
 **Nhật ký làm việc (BE Agent Logs)**:

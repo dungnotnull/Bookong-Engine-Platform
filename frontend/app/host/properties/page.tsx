@@ -92,22 +92,23 @@ export default function HostPropertiesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {hotels.map((hotel) => (
-              <div key={hotel.id} className="bg-white rounded-2xl border border-gray-100 shadow-airbnb overflow-hidden flex flex-col justify-between">
-                <div>
-                  <div className="relative h-48 w-full bg-gray-100">
-                    {hotel.coverImage ? (
-                      <Image src={hotel.coverImage} alt={hotel.name} fill className="object-cover" />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
-                        <Building2 className="w-12 h-12" />
+            {hotels.map((hotel) => {
+              const coverUrl =
+                hotel.coverImage && typeof hotel.coverImage === 'string' && !hotel.coverImage.startsWith('blob:')
+                  ? hotel.coverImage
+                  : (hotel.images && hotel.images.find((img) => img && typeof img === 'string' && !img.startsWith('blob:')))
+                  || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop';
+
+              return (
+                <div key={hotel.id} className="bg-white rounded-2xl border border-gray-100 shadow-airbnb overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="relative h-48 w-full bg-gray-100">
+                      <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                      <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
+                        {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
                       </div>
-                    )}
-                    <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
-                      {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
                     </div>
-                  </div>
 
                   <div className="p-5 space-y-2">
                     <h3 className="font-extrabold text-base text-gray-900">{hotel.name}</h3>
@@ -119,11 +120,34 @@ export default function HostPropertiesPage() {
                   </div>
                 </div>
 
-                {/* Footer Action Card - Link Quản lý loại phòng (Fix BUG-010) */}
+                {/* Footer Action Card - Link Quản lý loại phòng */}
                 <div className="p-5 pt-0 flex items-center justify-between border-t border-gray-50 mt-4">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${hotel.isApproved ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
-                    {hotel.isApproved ? 'Đã duyệt (Active)' : 'Đang chờ duyệt'}
-                  </span>
+                  {(() => {
+                    const isApproved = hotel.status === 'APPROVED' || hotel.isApproved === true;
+                    const isRejected = hotel.status === 'REJECTED';
+                    if (isApproved) {
+                      return (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full text-emerald-700 bg-emerald-50 border border-emerald-200/60 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Đã duyệt (Active)
+                        </span>
+                      );
+                    }
+                    if (isRejected) {
+                      return (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full text-red-700 bg-red-50 border border-red-200/60 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                          Bị từ chối
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 bg-amber-50 border border-amber-200/60 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        Đang chờ duyệt
+                      </span>
+                    );
+                  })()}
                   
                   {/* Nút Quản lý loại phòng có sự kiện onClick / Link sang /host/rooms */}
                   <Link href={`/host/rooms?hotelId=${hotel.id}`}>
@@ -133,8 +157,9 @@ export default function HostPropertiesPage() {
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
           <Pagination
             page={page}
