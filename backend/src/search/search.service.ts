@@ -30,10 +30,11 @@ export class SearchService {
         const vector = await this.vectorService.getEmbedding(q);
         const vectorStr = `[${vector.join(',')}]`;
         
-        vectorScore = `GREATEST(
+        vectorScore = `MAX(GREATEST(
           COALESCE(1 - (h."searchVector" <=> '${vectorStr}'::vector), 0),
+          COALESCE(1 - (ar."searchVector" <=> '${vectorStr}'::vector), 0),
           CASE WHEN h.city ILIKE $${qIndex} OR h.name ILIKE $${qIndex} OR h.address ILIKE $${qIndex} THEN 1.0 ELSE 0.0 END
-        ) AS score`;
+        )) AS score`;
         
         vectorOrderBy = `ORDER BY score DESC`;
         
@@ -41,7 +42,13 @@ export class SearchService {
           h.city ILIKE $${qIndex} 
           OR h.name ILIKE $${qIndex} 
           OR h.address ILIKE $${qIndex}
-          OR (1 - (h."searchVector" <=> '${vectorStr}'::vector)) > 0.5
+          OR (1 - (h."searchVector" <=> '${vectorStr}'::vector)) > 0.35
+          OR EXISTS (
+            SELECT 1 FROM "Room" r 
+            WHERE r."hotelId" = h.id 
+              AND r."isActive" = true 
+              AND (1 - (r."searchVector" <=> '${vectorStr}'::vector)) > 0.35
+          )
         )`;
       } catch (err) {
         vectorOrderBy = ``;
@@ -61,7 +68,7 @@ export class SearchService {
 
     const baseSql = `
       WITH AvailableRooms AS (
-        SELECT r.id, r."hotelId", r.name, r.type, r."basePrice", r.capacity, r.quantity,
+        SELECT r.id, r."hotelId", r.name, r.type, r."basePrice", r.capacity, r.quantity, r."searchVector",
                (r.quantity - COALESCE(b.booked_count, 0)) AS available_quantity
         FROM "Room" r
         LEFT JOIN (

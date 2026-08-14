@@ -115,8 +115,8 @@ export class RoomsService {
     
     if (!room) return;
 
-    const amenityNames = room.roomAmenities.map(ha => ha.amenity.name).join(' ');
-    const textToEmbed = `${room.name} ${room.type} ${amenityNames}`.trim();
+    const amenityNames = room.roomAmenities.map(ha => ha.amenity.name).join(', ');
+    const textToEmbed = `${room.name} (${room.type}) - Sức chứa ${room.capacity} người - Tiện nghi: ${amenityNames}`.trim();
     
     if (!textToEmbed) return;
 
