@@ -67,6 +67,7 @@ model Room {
   basePrice     Float
   capacity      Int
   quantity      Int
+  isActive      Boolean        @default(true)
   searchVector  Unsupported("vector")?
   imageUrl      String?
   createdAt     DateTime       @default(now())

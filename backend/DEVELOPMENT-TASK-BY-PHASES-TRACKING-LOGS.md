@@ -156,4 +156,5 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
 
 ---
 **Nhật ký làm việc (BE Agent Logs)**:
+- [x] Refactor Room Deletion: Áp dụng Soft Delete (`isActive = false`) thay vì xóa cứng khỏi Database để giữ lại lịch sử giao dịch. Đã cập nhật `schema.prisma`, `rooms.service.ts`, và `search.service.ts`.
 - *(Thêm log làm việc vào đây để không quên context...)*

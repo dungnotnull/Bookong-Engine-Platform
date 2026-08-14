@@ -33,12 +33,10 @@ export class RoomsService {
     return room;
   }
 
-  async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string) {
+  async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string, includeInactive?: boolean) {
+    // Nếu có checkIn và checkOut, tính toán availableQuantity bằng Raw SQL
     if (checkIn && checkOut) {
-      const checkInDate = new Date(checkIn).toISOString();
-      const checkOutDate = new Date(checkOut).toISOString();
-      const params = [hotelId, checkInDate, checkOutDate];
-      
+      const params = [hotelId, checkIn, checkOut];
       const rawSql = `
         SELECT r.*,
                (r.quantity - COALESCE(b.booked_count, 0))::integer AS "availableQuantity"
@@ -51,14 +49,19 @@ export class RoomsService {
             AND "checkOut" > $2::timestamp
           GROUP BY "roomId"
         ) b ON r.id = b."roomId"
-        WHERE r."hotelId" = $1
+        WHERE r."hotelId" = $1 ${includeInactive ? '' : 'AND r."isActive" = true'}
       `;
       
       const results = await this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params);
       return results;
     }
 
-    const rooms = await this.prisma.room.findMany({ where: { hotelId } });
+    const rooms = await this.prisma.room.findMany({ 
+      where: { 
+        hotelId, 
+        ...(includeInactive ? {} : { isActive: true }) 
+      } 
+    });
     return rooms.map(room => ({ ...room, availableQuantity: room.quantity }));
   }
 
@@ -101,7 +104,7 @@ export class RoomsService {
     if (role !== 'ADMIN' && hotel?.hostId !== hostId) {
       throw new ForbiddenException('You can only delete rooms in your own hotel');
     }
-    return this.prisma.room.delete({ where: { id } });
+    return this.prisma.room.update({ where: { id }, data: { isActive: false } });
   }
 
   async syncVector(roomId: string) {

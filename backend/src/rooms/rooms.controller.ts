@@ -20,9 +20,10 @@ export class RoomsController {
   findAllInHotel(
     @Param('hotelId') hotelId: string,
     @Query('checkIn') checkIn?: string,
-    @Query('checkOut') checkOut?: string
+    @Query('checkOut') checkOut?: string,
+    @Query('includeInactive') includeInactive?: string
   ) {
-    return this.roomsService.findAllInHotel(hotelId, checkIn, checkOut);
+    return this.roomsService.findAllInHotel(hotelId, checkIn, checkOut, includeInactive === 'true');
   }
 
   @Get('rooms/:id')

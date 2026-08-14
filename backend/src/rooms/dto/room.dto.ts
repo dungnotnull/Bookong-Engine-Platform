@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, Min, IsBoolean } from 'class-validator';
 
 export class CreateRoomDto {
   @IsString()
@@ -52,6 +52,10 @@ export class UpdateRoomDto {
   @IsNumber()
   @Min(1)
   quantity?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @IsOptional()
   @IsArray()

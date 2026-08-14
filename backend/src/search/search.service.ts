@@ -75,6 +75,7 @@ export class SearchService {
         WHERE r.capacity >= $3
           ${minPriceFilter}
           ${maxPriceFilter}
+          AND r."isActive" = true
           AND (r.quantity - COALESCE(b.booked_count, 0)) > 0
       )
     `;
