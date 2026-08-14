@@ -88,10 +88,22 @@ export class SearchService {
         const requiredCount = amenities.split(',').filter(a => a.trim() !== '').length;
         amenitiesFilter = `
           AND h.id IN (
-            SELECT "hotelId" FROM "HotelAmenity"
-            WHERE "amenityId" IN (${amenityList})
-            GROUP BY "hotelId"
-            HAVING COUNT(DISTINCT "amenityId") >= ${requiredCount}
+            SELECT hotelId FROM (
+              SELECT ha."hotelId" as hotelId, a.name as name
+              FROM "HotelAmenity" ha
+              INNER JOIN "Amenity" a ON ha."amenityId" = a.id
+              WHERE a.name IN (${amenityList})
+              
+              UNION
+              
+              SELECT r."hotelId" as hotelId, a.name as name
+              FROM "RoomAmenity" ra
+              INNER JOIN "Room" r ON ra."roomId" = r.id
+              INNER JOIN "Amenity" a ON ra."amenityId" = a.id
+              WHERE a.name IN (${amenityList}) AND r."isActive" = true
+            ) combined_amenities
+            GROUP BY hotelId
+            HAVING COUNT(DISTINCT name) >= ${requiredCount}
           )
         `;
       }
