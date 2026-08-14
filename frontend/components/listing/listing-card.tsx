@@ -142,8 +142,8 @@ export function ListingCard({ listing, className }: ListingCardProps) {
       {/* Listing Content Description */}
       <div className="mt-3 flex flex-col gap-0.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-sm text-main line-clamp-1 group-hover:text-rausch transition-colors">
-            {location}
+          <h3 className="font-extrabold text-sm text-main line-clamp-1 group-hover:text-rausch transition-colors">
+            {title}
           </h3>
           <div className="flex items-center gap-1 text-xs font-semibold text-main shrink-0">
             <Star className="w-3.5 h-3.5 fill-main text-main" />
@@ -151,7 +151,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
           </div>
         </div>
 
-        <p className="text-xs text-muted line-clamp-1">{title}</p>
+        <p className="text-xs text-muted font-normal line-clamp-1">{location}</p>
 
         <div className="mt-1.5 flex items-baseline gap-1 text-xs text-main">
           <span className="font-bold text-sm text-main">{formatCurrency(price)}</span>

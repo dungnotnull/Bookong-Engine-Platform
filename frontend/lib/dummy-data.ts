@@ -19,12 +19,15 @@ export interface PropertyListing {
 
 export const CATEGORIES = [
   { id: 'all', label: 'Tất cả chỗ nghỉ', icon: 'Grid' },
+  { id: 'hotel', label: 'Khách sạn', icon: 'Building' },
+  { id: 'resort', label: 'Resort', icon: 'Sparkles' },
+  { id: 'homestay', label: 'Homestay', icon: 'Home' },
+  { id: 'villa', label: 'Biệt thự', icon: 'Building2' },
+  { id: 'apartment', label: 'Căn hộ', icon: 'Hotel' },
   { id: 'beach', label: 'Gần biển', icon: 'Waves' },
   { id: 'pool', label: 'Hồ bơi tuyệt đẹp', icon: 'Sun' },
-  { id: 'villa', label: 'Biệt thự nguyên căn', icon: 'Home' },
-  { id: 'luxury', label: 'Luxury & Resort', icon: 'Sparkles' },
-  { id: 'mountain', label: 'Hướng núi & Đà Lạt', icon: 'Trees' },
-  { id: 'cabin', label: 'Nhà gỗ Cabin', icon: 'Tent' },
+  { id: 'luxury', label: 'Sang trọng', icon: 'Crown' },
+  { id: 'nature', label: 'Gần gũi thiên nhiên', icon: 'Trees' },
 ];
 
 export const DUMMY_LISTINGS: PropertyListing[] = [

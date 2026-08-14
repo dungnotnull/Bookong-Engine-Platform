@@ -19,7 +19,7 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
   const [city, setCity] = useState('Phú Quốc');
   const [description, setDescription] = useState('');
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(['wifi', 'pool', 'parking']);
-  const [coverImage, setCoverImage] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -29,10 +29,16 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
       return;
     }
 
+    if (images.length === 0) {
+      setErrorMsg('Vui lòng tải lên ít nhất 1 ảnh làm đại diện khách sạn.');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg('');
 
     try {
+      const coverImage = images[0] || '';
       // Gọi API POST /api/v1/hotels
       await apiClient.post('/hotels', {
         name,
@@ -42,7 +48,7 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
         description,
         amenityIds: selectedAmenityIds,
         coverImage,
-        images: [coverImage],
+        images,
       });
       onSuccess();
     } catch (err: any) {
@@ -152,9 +158,10 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
       {step === 3 && (
         <div className="space-y-4">
           <ImageUploadInput
-            label="Tải ảnh đại diện khách sạn từ máy tính *"
-            value={coverImage}
-            onChange={setCoverImage}
+            label="Tải ảnh đại diện và bộ sưu tập ảnh khách sạn từ máy tính *"
+            values={images}
+            onMultipleChange={setImages}
+            multiple
             required
           />
 
@@ -163,6 +170,7 @@ export function HotelWizardForm({ onSuccess, onCancel }: HotelWizardFormProps) {
             <p><span className="font-medium text-gray-500">Tên:</span> {name}</p>
             <p><span className="font-medium text-gray-500">Vị trí:</span> {address}, {city}</p>
             <p><span className="font-medium text-gray-500">Tiện nghi:</span> {selectedAmenityIds.length} dịch vụ đã chọn</p>
+            <p><span className="font-medium text-gray-500">Hình ảnh:</span> {images.length} ảnh đã tải lên</p>
           </div>
 
           <div className="flex justify-between pt-4">

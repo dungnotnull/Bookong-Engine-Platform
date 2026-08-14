@@ -9,6 +9,8 @@ export function PillSearchBar() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'location' | 'dates' | 'guests' | null>(null);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const [location, setLocation] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -74,6 +76,7 @@ export function PillSearchBar() {
               </label>
               <input
                 type="date"
+                min={todayStr}
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
                 className="w-full text-xs font-semibold text-main bg-transparent outline-none"
@@ -85,6 +88,7 @@ export function PillSearchBar() {
               </label>
               <input
                 type="date"
+                min={checkIn || todayStr}
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 className="w-full text-xs font-semibold text-main bg-transparent outline-none"
@@ -112,11 +116,13 @@ export function PillSearchBar() {
               {totalGuests > 0 ? `${totalGuests} khách` : 'Thêm số khách'}
             </span>
           </div>
+        </div>
 
-          {/* Search Button */}
+        {/* Dedicated Far-Right Search Button Container */}
+        <div className="p-1 shrink-0">
           <button
             type="submit"
-            className="hidden md:flex items-center justify-center gap-2 bg-rausch hover:bg-rausch-hover text-white font-bold text-sm px-5 py-3 rounded-full shadow-md transition-all active:scale-95 shrink-0 ml-2"
+            className="hidden md:flex items-center justify-center gap-2 bg-rausch hover:bg-rausch-hover text-white font-bold text-sm px-6 py-3.5 rounded-full shadow-md transition-all active:scale-95"
           >
             <Search className="w-4 h-4 stroke-[2.5]" />
             <span>Tìm kiếm</span>
@@ -132,9 +138,12 @@ export function PillSearchBar() {
           <span>Tìm kiếm</span>
         </button>
 
-        {/* Guests Popover Selector */}
+        {/* Guests Popover Selector (stops propagation so clicking controls doesn't auto-close) */}
         {isGuestsOpen && (
-          <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl p-5 shadow-modal border border-border-light z-50 animate-fade-in text-xs space-y-4">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl p-5 shadow-modal border border-border-light z-50 animate-fade-in text-xs space-y-4"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-main">Người lớn</p>
@@ -144,16 +153,22 @@ export function PillSearchBar() {
                 <button
                   type="button"
                   disabled={adults <= 1}
-                  onClick={() => setAdults(adults - 1)}
-                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main disabled:opacity-30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAdults(adults - 1);
+                  }}
+                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main disabled:opacity-30 cursor-pointer"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="font-bold text-sm text-main w-4 text-center">{adults}</span>
                 <button
                   type="button"
-                  onClick={() => setAdults(adults + 1)}
-                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAdults(adults + 1);
+                  }}
+                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -169,16 +184,22 @@ export function PillSearchBar() {
                 <button
                   type="button"
                   disabled={childrenCount <= 0}
-                  onClick={() => setChildrenCount(childrenCount - 1)}
-                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main disabled:opacity-30"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChildrenCount(childrenCount - 1);
+                  }}
+                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main disabled:opacity-30 cursor-pointer"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
                 <span className="font-bold text-sm text-main w-4 text-center">{childrenCount}</span>
                 <button
                   type="button"
-                  onClick={() => setChildrenCount(childrenCount + 1)}
-                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChildrenCount(childrenCount + 1);
+                  }}
+                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-main hover:border-main cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

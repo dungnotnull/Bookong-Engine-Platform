@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { MapPin, Star, Share2, Heart, Wifi, Waves, Car, Wind } from 'lucide-react';
 import { RoomSelectionTable } from '@/components/hotel-detail/room-selection-table';
 import { ErrorState } from '@/components/common/error-state';
@@ -11,18 +12,35 @@ import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 
 export default function HotelDetailPage({ params }: { params: { id: string } }) {
+  const searchParams = useSearchParams();
+  const checkIn = searchParams.get('checkIn') || '';
+  const checkOut = searchParams.get('checkOut') || '';
+
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+
+  // Tính số đêm (Nights) từ checkIn và checkOut
+  let nights = 1;
+  if (checkIn && checkOut) {
+    const diffTime = Math.abs(new Date(checkOut).getTime() - new Date(checkIn).getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 0) nights = diffDays;
+  }
 
   const fetchHotel = useCallback(async () => {
     if (!params.id) return;
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/hotels/:id
-      const res: any = await apiClient.get(`/hotels/${params.id}`);
+      // Gọi API GET /api/v1/hotels/:id kèm query checkIn / checkOut nếu có
+      const queryStr = new URLSearchParams({
+        ...(checkIn && { checkIn }),
+        ...(checkOut && { checkOut }),
+      }).toString();
+
+      const res: any = await apiClient.get(`/hotels/${params.id}${queryStr ? `?${queryStr}` : ''}`);
       const data = res?.data || res;
       if (data && typeof data === 'object' && data.id) {
         setHotel(data);
@@ -35,7 +53,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
     } finally {
       setIsLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, checkIn, checkOut]);
 
   useEffect(() => {
     fetchHotel();
@@ -199,7 +217,7 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
       </div>
 
       {/* Interactive Room Table */}
-      <RoomSelectionTable rooms={hotel.rooms || []} nights={2} />
+      <RoomSelectionTable rooms={hotel.rooms || []} nights={nights} checkIn={checkIn} checkOut={checkOut} />
     </div>
   );
 }

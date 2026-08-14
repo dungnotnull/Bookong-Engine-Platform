@@ -29,7 +29,7 @@ export default function BookingSuccessPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Link href="/user/bookings" className="flex-1">
+          <Link href="/bookings" className="flex-1">
             <Button variant="action" className="w-full font-bold">
               Quản lý đơn hàng
             </Button>

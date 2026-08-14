@@ -16,6 +16,11 @@ export function NavbarSticky() {
     setIsMounted(true);
   }, []);
 
+  // Tự động đóng menu khi chuyển trang
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   if (pathname.startsWith('/host') || pathname.startsWith('/admin')) {
     return null;
   }

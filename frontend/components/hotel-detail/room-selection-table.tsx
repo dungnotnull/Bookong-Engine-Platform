@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Users, Check, Sparkles } from 'lucide-react';
 import { Room } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
@@ -11,9 +12,25 @@ import { Badge } from '@/components/ui/badge';
 interface RoomSelectionTableProps {
   rooms: Room[];
   nights: number;
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
 }
 
-export function RoomSelectionTable({ rooms, nights }: RoomSelectionTableProps) {
+export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }: RoomSelectionTableProps) {
+  const searchParams = useSearchParams();
+
+  const effectiveCheckIn = checkIn || searchParams.get('checkIn') || '';
+  const effectiveCheckOut = checkOut || searchParams.get('checkOut') || '';
+  const effectiveGuests = guests || searchParams.get('guests') || '';
+
+  const queryParams = new URLSearchParams();
+  if (effectiveCheckIn) queryParams.set('checkIn', effectiveCheckIn);
+  if (effectiveCheckOut) queryParams.set('checkOut', effectiveCheckOut);
+  if (effectiveGuests) queryParams.set('guests', String(effectiveGuests));
+
+  const queryString = queryParams.toString();
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
       <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
@@ -35,6 +52,7 @@ export function RoomSelectionTable({ rooms, nights }: RoomSelectionTableProps) {
           <tbody className="divide-y divide-gray-100 text-xs">
             {rooms.map((room) => {
               const totalPrice = room.basePrice * nights;
+              const checkoutHref = `/checkout/${room.id}${queryString ? `?${queryString}` : ''}`;
               return (
                 <tr key={room.id} className="hover:bg-blue-50/30 transition-smooth">
                   <td className="p-4">
@@ -68,7 +86,7 @@ export function RoomSelectionTable({ rooms, nights }: RoomSelectionTableProps) {
                   </td>
 
                   <td className="p-4 text-right">
-                    <Link href={`/checkout/${room.id}`}>
+                    <Link href={checkoutHref}>
                       <Button variant="yellow" size="md" className="font-bold text-slate-900">
                         Tôi sẽ đặt
                       </Button>
