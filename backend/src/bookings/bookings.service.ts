@@ -39,6 +39,10 @@ export class BookingsService {
     const checkIn = new Date(data.checkIn);
     const checkOut = new Date(data.checkOut);
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (checkIn < today) throw new BadRequestException('Check-in date cannot be in the past');
     if (checkIn >= checkOut) throw new BadRequestException('Check-out must be after check-in');
     
     const roomQuantity = data.roomQuantity || 1;
@@ -60,6 +64,11 @@ export class BookingsService {
   async calculatePrice(data: CalculatePriceDto) {
     const checkIn = new Date(data.checkIn);
     const checkOut = new Date(data.checkOut);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (checkIn < today) throw new BadRequestException('Check-in date cannot be in the past');
     if (checkIn >= checkOut) throw new BadRequestException('Check-out must be after check-in');
 
     const room = await this.prisma.room.findUnique({ where: { id: data.roomId }, include: { hotel: true } });
