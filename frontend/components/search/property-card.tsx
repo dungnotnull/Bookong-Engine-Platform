@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { MapPin, Sparkles, Check, Heart } from 'lucide-react';
 import { Hotel } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
@@ -14,6 +15,18 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ hotel }: PropertyCardProps) {
+  const searchParams = useSearchParams();
+  const checkIn = searchParams.get('checkIn');
+  const checkOut = searchParams.get('checkOut');
+  const guests = searchParams.get('guests');
+
+  const queryParams = new URLSearchParams();
+  if (checkIn) queryParams.set('checkIn', checkIn);
+  if (checkOut) queryParams.set('checkOut', checkOut);
+  if (guests) queryParams.set('guests', guests);
+
+  const queryString = queryParams.toString();
+  const hotelHref = `/hotels/${hotel.id}${queryString ? `?${queryString}` : ''}`;
   const minRoomPrice = hotel.rooms && hotel.rooms.length > 0 ? hotel.rooms[0].basePrice : 1500000;
 
   return (
@@ -37,7 +50,7 @@ export function PropertyCard({ hotel }: PropertyCardProps) {
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="text-base font-extrabold text-booking-navy hover:underline">
-                <Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link>
+                <Link href={hotelHref}>{hotel.name}</Link>
               </h3>
               <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-booking-navy shrink-0" />
@@ -77,7 +90,7 @@ export function PropertyCard({ hotel }: PropertyCardProps) {
             <span className="text-lg font-black text-booking-navy">{formatCurrency(minRoomPrice)}</span>
             <span className="text-[10px] text-gray-400 block">Đã bao gồm thuế & phí</span>
           </div>
-          <Link href={`/hotels/${hotel.id}`}>
+          <Link href={hotelHref}>
             <Button variant="action" size="md" className="font-bold">
               Xem phòng trống
             </Button>

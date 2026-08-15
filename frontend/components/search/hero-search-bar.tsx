@@ -17,6 +17,25 @@ export function HeroSearchBar() {
   const [semanticQuery, setSemanticQuery] = useState(searchStore.semanticQuery);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const handleCheckInChange = (newIn: string) => {
+    setCheckIn(newIn);
+    if (new Date(checkOut) <= new Date(newIn)) {
+      const autoOut = new Date(new Date(newIn).setDate(new Date(newIn).getDate() + 1)).toISOString().split('T')[0];
+      setCheckOut(autoOut);
+    }
+  };
+
+  const handleCheckOutChange = (newOut: string) => {
+    if (new Date(newOut) <= new Date(checkIn)) {
+      const autoOut = new Date(new Date(checkIn).setDate(new Date(checkIn).getDate() + 1)).toISOString().split('T')[0];
+      setCheckOut(autoOut);
+    } else {
+      setCheckOut(newOut);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -81,8 +100,9 @@ export function HeroSearchBar() {
             </label>
             <input
               type="date"
+              min={todayStr}
               value={checkIn}
-              onChange={(e) => setCheckIn(e.target.value)}
+              onChange={(e) => handleCheckInChange(e.target.value)}
               className="text-xs font-bold text-gray-900 bg-transparent outline-none"
             />
           </div>
@@ -90,8 +110,9 @@ export function HeroSearchBar() {
             <label className="text-[10px] font-bold uppercase text-gray-500">Check-out</label>
             <input
               type="date"
+              min={checkIn || todayStr}
               value={checkOut}
-              onChange={(e) => setCheckOut(e.target.value)}
+              onChange={(e) => handleCheckOutChange(e.target.value)}
               className="text-xs font-bold text-gray-900 bg-transparent outline-none"
             />
           </div>

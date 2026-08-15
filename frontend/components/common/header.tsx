@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { User, LogOut, Building, Globe } from 'lucide-react';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [currency, setCurrency] = useState<'VND' | 'USD'>('VND');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -17,6 +18,11 @@ export function Header() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Tự động đóng dropdown khi chuyển trang
+  useEffect(() => {
+    setIsProfileOpen(false);
+  }, [pathname]);
 
   const toggleCurrency = () => {
     setCurrency((prev) => (prev === 'VND' ? 'USD' : 'VND'));

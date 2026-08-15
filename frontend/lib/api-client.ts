@@ -10,7 +10,7 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Request Interceptor: Tự động đính kèm Token Bearer từ localStorage/Zustand
+// Request Interceptor: Tự động đính kèm Token Bearer và xử lý FormData (tránh lỗi JSON.stringify {"file":{}})
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== 'undefined') {
@@ -19,6 +19,15 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+
+    // Nếu payload là FormData, xóa Content-Type mặc định (application/json) để trình duyệt/axios tự động thiết lập multipart/form-data kèm boundary
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+      if (config.headers.post) {
+        delete config.headers.post['Content-Type'];
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

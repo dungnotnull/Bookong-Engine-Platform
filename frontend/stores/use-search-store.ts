@@ -20,7 +20,7 @@ const today = new Date();
 const tomorrow = addDays(today, 1);
 
 export const useSearchStore = create<SearchStoreState>((set) => ({
-  location: 'Phú Quốc',
+  location: '',
   checkIn: format(today, 'yyyy-MM-dd'),
   checkOut: format(tomorrow, 'yyyy-MM-dd'),
   guests: 2,
