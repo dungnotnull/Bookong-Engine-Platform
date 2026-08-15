@@ -174,3 +174,26 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
   }
   ```
 
+---
+
+### 2.13. Reviews & Messages (Phase 6)
+- `POST /api/v1/hotels/:hotelId/reviews`:
+  - **Payload**: `{ "bookingId": "uuid", "locationRating": 5, "cleanlinessRating": 5, "serviceRating": 5, "valueRating": 5, "comment": "Tốt" }`
+  - **Response Data**: Thông tin Review vừa tạo. (Yêu cầu Token, user phải check-out booking này).
+- `GET /api/v1/hotels/:hotelId/reviews`:
+  - **Query Params**: `page`, `limit`
+  - **Response Data**: Danh sách review phân trang kèm thông tin User.
+- `DELETE /api/v1/reviews/:id`:
+  - **Response Data**: `{ "message": "Review deleted successfully" }` (Admin only).
+- `GET /api/v1/messages/:bookingId`:
+  - **Response Data**: `[ { "id": "uuid", "senderId": "uuid", "receiverId": "uuid", "content": "str", "createdAt": "ISO Date" } ]` (Chỉ Host hoặc Guest của booking mới xem được).
+
+**Socket.io (Realtime Chat)**
+- **Connection URL**: `ws://localhost:3000` (hoặc URL backend tương ứng).
+- **Authentication**: Truyền Token qua `auth: { token: '...' }` hoặc Header `Authorization: Bearer ...`.
+- **Events (Client to Server)**:
+  - `joinRoom`: Payload `{ "bookingId": "uuid" }` -> Join vào room chat của booking.
+  - `sendMessage`: Payload `{ "bookingId": "uuid", "content": "Hello" }` -> Gửi tin nhắn.
+- **Events (Server to Client)**:
+  - `newMessage`: Payload object Message. Lắng nghe để update UI.
+

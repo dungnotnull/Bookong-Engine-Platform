@@ -122,27 +122,27 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
     - `PATCH /admin/hotels/:id/approve` (API duyệt/từ chối khách sạn)
 
 ## Phase 6: Advanced & Polish
-- [ ] **6.1 Verified Reviews System**
+- [x] **6.1 Verified Reviews System**
   - [!] **CONSTRAINT**: User CHỈ được viết review NẾU VÀ CHỈ NẾU có Booking ID tại khách sạn đó với status `CHECKED_OUT`. Mỗi booking chỉ review 1 lần.
-  - [ ] Bảng `Review` (booking_id, user_id, hotel_id, location_rating, cleanliness_rating, service_rating, value_rating, comment).
-  - [ ] APIs Review:
+  - [x] Bảng `Review` (booking_id, user_id, hotel_id, location_rating, cleanliness_rating, service_rating, value_rating, comment).
+  - [x] APIs Review:
     - `POST /hotels/:hotelId/reviews`: User viết đánh giá (GUARD: Booking của user tại hotel này phải có status `CHECKED_OUT`).
     - `GET /hotels/:hotelId/reviews`: Public xem danh sách đánh giá của khách sạn.
     - `DELETE /reviews/:id`: Admin xóa đánh giá vi phạm.
-  - [ ] Cập nhật điểm đánh giá trung bình của Hotel (Trigger hoặc Cronjob tính lại điểm).
-- [ ] **6.2 Messaging System (Socket.io)**
-  - [ ] Bảng `Message` (id, sender_id, receiver_id, booking_id, content, created_at).
-  - [ ] REST APIs: `GET /messages/:bookingId` (Lấy lịch sử tin nhắn của 1 booking).
-  - [ ] Cài đặt `@nestjs/websockets`, `@nestjs/platform-socket.io`.
-  - [ ] Tạo `ChatGateway`, Xử lý authentication cho Socket.
-  - [ ] Emit message realtime giữa User và Host dựa vào `booking_id` làm Room Socket.
-- [ ] **6.3 Background Jobs & Cron**
-  - [ ] Tích hợp `@nestjs/schedule`.
-  - [ ] Cronjob mỗi ngày: Chuyển các booking quá ngày check-out thành `CHECKED_OUT` nếu Host quên update.
-  - [ ] Cronjob dọn dẹp các Pending Booking chưa thanh toán.
-- [ ] **6.4 Database Optimization**
-  - [ ] Thêm Index cho các cột Date (`check_in`, `check_out`), `hotel_id`, `user_id`.
-  - [ ] Kiểm tra HNSW / IVFFlat index cho Vector column để search nhanh hơn.
+  - [x] Cập nhật điểm đánh giá trung bình của Hotel (Trigger hoặc Cronjob tính lại điểm).
+- [x] **6.2 Messaging System (Socket.io)**
+  - [x] Bảng `Message` (id, sender_id, receiver_id, booking_id, content, created_at).
+  - [x] REST APIs: `GET /messages/:bookingId` (Lấy lịch sử tin nhắn của 1 booking).
+  - [x] Cài đặt `@nestjs/websockets`, `@nestjs/platform-socket.io`.
+  - [x] Tạo `ChatGateway`, Xử lý authentication cho Socket.
+  - [x] Emit message realtime giữa User và Host dựa vào `booking_id` làm Room Socket.
+- [x] **6.3 Background Jobs & Cron**
+  - [x] Tích hợp `@nestjs/schedule`.
+  - [x] Cronjob mỗi ngày: Chuyển các booking quá ngày check-out thành `CHECKED_OUT` nếu Host quên update.
+  - [x] Cronjob dọn dẹp các Pending Booking chưa thanh toán.
+- [x] **6.4 Database Optimization**
+  - [x] Thêm Index cho các cột Date (`check_in`, `check_out`), `hotel_id`, `user_id`.
+  - [x] Kiểm tra HNSW / IVFFlat index cho Vector column để search nhanh hơn.
 - [x] **6.5 Pagination System (Offset-based)**
   - [x] Tạo `PaginationQueryDto` chung cho toàn hệ thống (`page`, `limit`).
   - [x] Cập nhật API Search & Public Hotels phân trang.
@@ -157,4 +157,7 @@ AI Agent BE bắt buộc phải cập nhật trạng thái (`[ ]`, `[x]`, `[/]`)
 ---
 **Nhật ký làm việc (BE Agent Logs)**:
 - [x] Refactor Room Deletion: Áp dụng Soft Delete (`isActive = false`) thay vì xóa cứng khỏi Database để giữ lại lịch sử giao dịch. Đã cập nhật `schema.prisma`, `rooms.service.ts`, và `search.service.ts`.
-- *(Thêm log làm việc vào đây để không quên context...)*
+- [x] Implement Verified Reviews System (Model, APIs, Cập nhật rating).
+- [x] Tích hợp Socket.io, Message System realtime giữa Host và User.
+- [x] Triển khai Cronjobs dọn dẹp Booking và Auto-Checkout.
+- [x] Bổ sung Database Index cho các trường thường xuyên query.

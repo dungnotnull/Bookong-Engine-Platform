@@ -21,6 +21,10 @@ import { HostModule } from './host/host.module';
 import { UploadModule } from './upload/upload.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ReviewsModule } from './reviews/reviews.module';
+import { MessagesModule } from './messages/messages.module';
+import { CronModule } from './cron/cron.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -50,6 +54,10 @@ import { join } from 'path';
       rootPath: join(process.cwd(), 'public'),
       serveRoot: '/',
     }),
+    ScheduleModule.forRoot(),
+    ReviewsModule,
+    MessagesModule,
+    CronModule,
   ],
   controllers: [AppController],
   providers: [AppService],

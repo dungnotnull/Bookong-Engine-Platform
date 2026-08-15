@@ -33,6 +33,9 @@ model User {
   bookings     Booking[]
   wishlists    Wishlist[]
   coupons      Coupon[]
+  reviews           Review[]
+  sentMessages      Message[] @relation("SentMessages")
+  receivedMessages  Message[] @relation("ReceivedMessages")
 }
 
 model Hotel {
@@ -56,6 +59,9 @@ model Hotel {
   wishlists     Wishlist[]
   pricingRules  PricingRule[]
   cancellationPolicies CancellationPolicy[]
+  reviews       Review[]
+
+  @@index([hostId])
 }
 
 model Room {
@@ -129,6 +135,13 @@ model Booking {
   refundAmount  Float?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  reviews       Review?
+  messages      Message[]
+
+  @@index([checkIn])
+  @@index([checkOut])
+  @@index([userId])
+  @@index([roomId])
 }
 
 model PricingRule {
@@ -180,4 +193,40 @@ model CancellationPolicy {
   penaltyPercentage   Float
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+model Review {
+  id                String   @id @default(uuid())
+  bookingId         String   @unique
+  booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotelId           String
+  hotel             Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  locationRating    Int
+  cleanlinessRating Int
+  serviceRating     Int
+  valueRating       Int
+  comment           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([userId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([senderId])
+  @@index([receiverId])
 }

@@ -223,6 +223,21 @@ export class HotelsService {
     if (role !== 'ADMIN' && hotel.hostId !== hostId) {
       throw new ForbiddenException('You can only delete your own hotel');
     }
+    
+    // Tìm và xóa tất cả các booking liên quan đến các phòng của khách sạn này
+    // để tránh lỗi Foreign Key Constraint (vì schema Booking.roomId không có onDelete: Cascade)
+    const rooms = await this.prisma.room.findMany({
+      where: { hotelId: id },
+      select: { id: true }
+    });
+    
+    const roomIds = rooms.map(r => r.id);
+    if (roomIds.length > 0) {
+      await this.prisma.booking.deleteMany({
+        where: { roomId: { in: roomIds } }
+      });
+    }
+
     return this.prisma.hotel.delete({ where: { id } });
   }
 
