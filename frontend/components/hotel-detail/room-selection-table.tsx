@@ -41,7 +41,11 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
     if (room.imageUrl) {
       return [room.imageUrl];
     }
+<<<<<<< HEAD
     return ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop'];
+=======
+    return [];
+>>>>>>> d542edbbe635e49c38a74d506f65724af607ecbc
   };
 
   return (
@@ -67,44 +71,36 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
               const totalPrice = room.basePrice * nights;
               const checkoutHref = `/checkout/${room.id}${queryString ? `?${queryString}` : ''}`;
               const roomImgs = getRoomImages(room);
-              const mainImgUrl = normalizeImageUrl(roomImgs[0]);
+              const mainImgUrl = roomImgs.length > 0 ? normalizeImageUrl(roomImgs[0]) : '';
 
               return (
                 <tr key={room.id} className="hover:bg-blue-50/30 transition-smooth">
                   <td className="p-4">
                     <div className="flex items-start gap-3">
-                      {/* Room Image Thumbnail */}
-                      <button
-                        onClick={() => setSelectedRoomForGallery(room)}
-                        className="relative w-24 h-20 rounded-xl overflow-hidden border border-gray-200 shrink-0 group bg-gray-100 shadow-xs hover:border-booking-blue transition-all"
-                        title="Click để xem bộ sưu tập hình ảnh loại phòng này"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={mainImgUrl} alt={room.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="p-1 rounded-full bg-white/80 text-booking-navy">
-                            <ImageIcon className="w-4 h-4" />
-                          </span>
-                        </div>
-                        {roomImgs.length > 1 && (
-                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-bold backdrop-blur-xs">
-                            +{roomImgs.length} ảnh
+                      {/* Room Single Image Thumbnail */}
+                      <div className="relative w-24 h-20 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 shadow-xs">
+                        {mainImgUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={mainImgUrl} alt={room.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-[10px] font-bold">
+                            Chưa có ảnh
                           </div>
                         )}
-                      </button>
+                      </div>
 
                       <div>
-                        <h4
-                          onClick={() => setSelectedRoomForGallery(room)}
-                          className="font-extrabold text-sm text-booking-navy hover:underline cursor-pointer"
-                        >
+                        <h4 className="font-extrabold text-sm text-booking-navy">
                           {room.name}
                         </h4>
                         <p className="text-[11px] text-gray-500 mt-0.5">Loại: {room.type}</p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          <Badge variant="blue">Điều hòa</Badge>
-                          <Badge variant="gray">Ban công</Badge>
-                        </div>
+                        {room.amenities && room.amenities.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {room.amenities.map((a) => (
+                              <Badge key={a.id || a.name} variant="blue">{a.name}</Badge>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </td>

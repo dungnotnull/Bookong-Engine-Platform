@@ -32,6 +32,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const payload = this.jwtService.verify(token, { secret });
       
       client.data.user = payload;
+      // Join personal room for notifications
+      client.join(`user_${payload.sub}`);
     } catch (error) {
       client.disconnect();
     }
@@ -57,12 +59,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (!client.data.user) return;
     const { bookingId, content } = data;
-    const senderId = client.data.user.id; // user ID from JWT payload
+    const senderId = client.data.user.sub; // user ID from JWT payload
 
     // Save message to DB
     const savedMessage = await this.messagesService.saveMessage(bookingId, senderId, content);
 
     // Emit to everyone in the room
     this.server.to(`booking_${bookingId}`).emit('newMessage', savedMessage);
+
+    // Emit global notification to the receiver
+    this.server.to(`user_${savedMessage.receiverId}`).emit('notification', {
+      type: 'NEW_MESSAGE',
+      message: 'You have a new message',
+      data: savedMessage
+    });
   }
 }
