@@ -34,40 +34,51 @@ export class RoomsService {
   }
 
   async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string, includeInactive?: boolean) {
-    let effectiveCheckIn = checkIn;
-    let effectiveCheckOut = checkOut;
+    let ci = checkIn ? new Date(checkIn) : new Date();
+    let co = checkOut ? new Date(checkOut) : new Date(ci.getTime() + 24 * 60 * 60 * 1000);
 
-    // Nếu không có checkIn/checkOut, mặc định tính khả dụng cho hiện tại (đêm nay)
-    if (!effectiveCheckIn || !effectiveCheckOut) {
-      const today = new Date();
-      today.setHours(14, 0, 0, 0); // Default check-in 14:00
-      
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(12, 0, 0, 0); // Default check-out 12:00
-
-      effectiveCheckIn = today.toISOString();
-      effectiveCheckOut = tomorrow.toISOString();
+    if (isNaN(ci.getTime()) || isNaN(co.getTime()) || ci >= co) {
+      ci = new Date();
+      co = new Date(ci.getTime() + 24 * 60 * 60 * 1000);
     }
 
-    const params = [hotelId, effectiveCheckIn, effectiveCheckOut];
-    const rawSql = `
-      SELECT r.*,
-             GREATEST(0, (r.quantity - COALESCE(b.booked_count, 0)))::integer AS "availableQuantity"
-      FROM "Room" r
-      LEFT JOIN (
-        SELECT "roomId", COALESCE(SUM("roomQuantity"), 0)::integer as booked_count
-        FROM "Booking"
-        WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
-          AND "checkIn" < $3::timestamp
-          AND "checkOut" > $2::timestamp
-        GROUP BY "roomId"
-      ) b ON r.id = b."roomId"
-      WHERE r."hotelId" = $1 ${includeInactive ? '' : 'AND r."isActive" = true'}
-    `;
-    
-    const results = await this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params);
-    return results;
+    const rooms = await this.prisma.room.findMany({
+      where: {
+        hotelId,
+        ...(includeInactive ? {} : { isActive: true })
+      },
+      include: {
+        roomAmenities: { include: { amenity: true } }
+      }
+    });
+
+    const roomsWithAvailability = await Promise.all(
+      rooms.map(async (room) => {
+        const overlapping = await this.prisma.booking.aggregate({
+          _sum: { roomQuantity: true },
+          where: {
+            roomId: room.id,
+            status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
+            OR: [
+              { checkIn: { lt: co }, checkOut: { gt: ci } }
+            ]
+          }
+        });
+
+        const bookedRooms = overlapping._sum?.roomQuantity || 0;
+        const availableQuantity = Math.max(0, room.quantity - bookedRooms);
+
+        const amenities = room.roomAmenities?.map((ra) => ra.amenity) || [];
+
+        return {
+          ...room,
+          amenities,
+          availableQuantity,
+        };
+      })
+    );
+
+    return roomsWithAvailability;
   }
 
   async findOne(id: string) {

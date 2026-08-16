@@ -243,7 +243,11 @@ function HostRoomsContent() {
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
                 {rooms.map((room) => {
-                  const avail = room.availableQuantity ?? room.quantity;
+                  const avail = typeof room.availableQuantity === 'number'
+                    ? room.availableQuantity
+                    : typeof (room as any).availablequantity === 'number'
+                    ? (room as any).availablequantity
+                    : room.quantity;
                   const isAvailable = avail > 0;
                   const isRoomDisabled = room.isActive === false;
                   return (

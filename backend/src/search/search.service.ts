@@ -74,7 +74,7 @@ export class SearchService {
         LEFT JOIN (
           SELECT "roomId", COALESCE(SUM("roomQuantity"), 0) as booked_count
           FROM "Booking"
-          WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
+          WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN')
             AND "checkIn" < $2::timestamp
             AND "checkOut" > $1::timestamp
           GROUP BY "roomId"

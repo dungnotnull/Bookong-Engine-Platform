@@ -105,7 +105,8 @@ MỌI THAY ĐỔI VỀ ENDPOINT, PAYLOAD, QUERY PARAMS HAY RESPONSE ĐỀU PHẢ
   - **Payload**: `{ "name": "str", "address": "str", "city": "str", "country": "str", "coverImage": "url", "images": ["url"] }`
   - **Response Data**: Thông tin khách sạn vừa tạo (object).
 - `GET /api/v1/hotels/:hotelId/rooms`:
-  - **Response Data**: `[ { "id": "uuid", "name": "str", "type": "str", "basePrice": 100, "capacity": 2, "imageUrl": "url", "isActive": true } ]`
+  - **Query Params**: `checkIn` (ISO string / YYYY-MM-DD), `checkOut` (ISO string / YYYY-MM-DD), `includeInactive` (boolean)
+  - **Response Data**: `[ { "id": "uuid", "name": "str", "type": "str", "basePrice": 100, "capacity": 2, "quantity": 5, "availableQuantity": 3, "imageUrl": "url", "amenities": [...], "isActive": true } ]`
 - `DELETE /api/v1/rooms/:id`:
   - **Response Data**: Thông tin phòng sau khi xoá mềm (isActive = false).
 

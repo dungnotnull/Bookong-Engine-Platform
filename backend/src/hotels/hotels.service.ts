@@ -145,39 +145,54 @@ export class HotelsService {
     const hotel = await this.prisma.hotel.findUnique({
       where: { id },
       include: { 
-        rooms: true,
+        rooms: {
+          include: {
+            roomAmenities: { include: { amenity: true } }
+          }
+        },
         hotelAmenities: { include: { amenity: true } } 
       }
     });
     if (!hotel) throw new NotFoundException('Hotel not found');
 
-    if (checkIn && checkOut) {
-      const ci = new Date(checkIn);
-      const co = new Date(checkOut);
-      
-      if (ci < co) {
-        const availableRooms: typeof hotel.rooms = [];
-        for (const room of hotel.rooms) {
-          const overlapping = await this.prisma.booking.aggregate({
-            _sum: { roomQuantity: true },
-            where: {
-              roomId: room.id,
-              status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
-              OR: [
-                { checkIn: { lt: co }, checkOut: { gt: ci } }
-              ]
-            }
-          });
-          const bookedRooms = overlapping._sum?.roomQuantity || 0;
-          if (room.quantity - bookedRooms >= 1) {
-            availableRooms.push(room);
-          }
-        }
-        hotel.rooms = availableRooms;
-      }
+    let ci = checkIn ? new Date(checkIn) : new Date();
+    let co = checkOut ? new Date(checkOut) : new Date(ci.getTime() + 24 * 60 * 60 * 1000);
+
+    if (isNaN(ci.getTime()) || isNaN(co.getTime()) || ci >= co) {
+      ci = new Date();
+      co = new Date(ci.getTime() + 24 * 60 * 60 * 1000);
     }
 
-    return hotel;
+    const roomsWithAvailability = await Promise.all(
+      hotel.rooms.map(async (room) => {
+        const overlapping = await this.prisma.booking.aggregate({
+          _sum: { roomQuantity: true },
+          where: {
+            roomId: room.id,
+            status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
+            OR: [
+              { checkIn: { lt: co }, checkOut: { gt: ci } }
+            ]
+          }
+        });
+
+        const bookedRooms = overlapping._sum?.roomQuantity || 0;
+        const availableQuantity = Math.max(0, room.quantity - bookedRooms);
+
+        const amenities = room.roomAmenities?.map((ra) => ra.amenity) || [];
+
+        return {
+          ...room,
+          amenities,
+          availableQuantity,
+        };
+      })
+    );
+
+    return {
+      ...hotel,
+      rooms: roomsWithAvailability,
+    };
   }
 
   async update(id: string, hostId: string, role: string, data: UpdateHotelDto) {

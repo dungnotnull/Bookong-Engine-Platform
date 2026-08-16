@@ -23,7 +23,7 @@ export class BookingsService {
       _sum: { roomQuantity: true },
       where: {
         roomId,
-        status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
+        status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
         OR: [
           { checkIn: { lt: checkOut }, checkOut: { gt: checkIn } }
         ]
@@ -158,7 +158,7 @@ export class BookingsService {
         _sum: { roomQuantity: true },
         where: {
           roomId: holdData.roomId,
-          status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
+          status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
           OR: [
             { checkIn: { lt: checkOut }, checkOut: { gt: checkIn } }
           ]

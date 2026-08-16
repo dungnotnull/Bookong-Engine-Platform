@@ -191,10 +191,12 @@ Tài liệu này theo dõi chi tiết toàn bộ các task phát triển ứng d
 - [x] **Task 6.2: Real-time 1-1 Messaging System (Socket.io - `GET /messages/:bookingId`)**
   - Drawer / Page Nhắn tin trực tiếp giữa Guest và Host liên quan tới 1 `booking_id`.
   - Tích hợp `socket.io-client`:
-    - Gọi REST API `GET /api/v1/messages/:bookingId` lấy lịch sử chat cũ.
-    - Kết nối Socket Gateway, Join Room theo `booking_id`.
-    - Gửi/nhận tin nhắn realtime kèm Typing Indicator.
-  - *Proof of Done*: Nhắn tin 2 chiều mượt mà giữa tài khoản Guest và tài khoản Host.
+    - Viết lại `use-socket-chat.ts` kết nối Socket thật, tự động fetch lịch sử tin nhắn từ API và trích xuất đúng mảng tin nhắn khi bị bọc bởi `TransformInterceptor`.
+    - Cập nhật `chat-drawer.tsx`: map sender name thật (`sender.fullName`), phân loại tin nhắn của "Tôi" vs đối phương bằng `currentUser.id`, bọc `Array.isArray` an toàn chống crash trang.
+    - Quản lý State với Zustand `use-chat-store.ts`: đếm số lượng tin nhắn chưa đọc (`unreadCounts`) cho từng `bookingId`.
+    - Component `global-notification.tsx` chạy ngầm trong `layout.tsx` lắng nghe sự kiện `newMessage` để tăng chấm đỏ realtime.
+    - Notification Badge (1, 2... 9+) hiển thị trực quan trên nút "Nhắn tin với Host" (`(user)/bookings`) và "Chat" (`host/bookings`), tự động reset về 0 khi click mở chat.
+  - *Proof of Done*: Type-check clean (0 error), build pass, kết nối socket và thông báo badge hoạt động mượt mà.
 
 - [x] **Task 6.3: Micro-animations & UX Polish**
   - Thêm hiệu ứng Framer Motion / CSS Transitions: Hover card nảy nhẹ, Heart animation khi wishlist, Transition mượt khi mở Modal.

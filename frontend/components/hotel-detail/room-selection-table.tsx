@@ -41,11 +41,7 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
     if (room.imageUrl) {
       return [room.imageUrl];
     }
-<<<<<<< HEAD
-    return ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop'];
-=======
     return [];
->>>>>>> d542edbbe635e49c38a74d506f65724af607ecbc
   };
 
   return (
@@ -73,8 +69,11 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
               const roomImgs = getRoomImages(room);
               const mainImgUrl = roomImgs.length > 0 ? normalizeImageUrl(roomImgs[0]) : '';
 
+              const availableCount = room.availableQuantity ?? room.quantity;
+              const isSoldOut = availableCount <= 0;
+
               return (
-                <tr key={room.id} className="hover:bg-blue-50/30 transition-smooth">
+                <tr key={room.id} className={`transition-smooth ${isSoldOut ? 'bg-red-50/20' : 'hover:bg-blue-50/30'}`}>
                   <td className="p-4">
                     <div className="flex items-start gap-3">
                       {/* Room Single Image Thumbnail */}
@@ -94,6 +93,24 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
                           {room.name}
                         </h4>
                         <p className="text-[11px] text-gray-500 mt-0.5">Loại: {room.type}</p>
+                        
+                        {/* Nhãn hiển thị số phòng khả dụng kho thực tế */}
+                        <div className="mt-1">
+                          {isSoldOut ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                              Hết phòng trong khoảng ngày này
+                            </span>
+                          ) : availableCount <= 3 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                              🔥 Chỉ còn {availableCount} phòng trống!
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                              Còn {availableCount} / {room.quantity} phòng trống
+                            </span>
+                          )}
+                        </div>
+
                         {room.amenities && room.amenities.length > 0 ? (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {room.amenities.map((a) => (
@@ -127,11 +144,17 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
                   </td>
 
                   <td className="p-4 text-right">
-                    <Link href={checkoutHref}>
-                      <Button variant="yellow" size="md" className="font-bold text-slate-900">
-                        Tôi sẽ đặt
+                    {isSoldOut ? (
+                      <Button variant="ghost" size="md" disabled className="font-bold text-gray-400 cursor-not-allowed bg-gray-100">
+                        Hết phòng
                       </Button>
-                    </Link>
+                    ) : (
+                      <Link href={checkoutHref}>
+                        <Button variant="yellow" size="md" className="font-bold text-slate-900 shadow-sm hover:scale-105 transition-all">
+                          Tôi sẽ đặt
+                        </Button>
+                      </Link>
+                    )}
                   </td>
                 </tr>
               );

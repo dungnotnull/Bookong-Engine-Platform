@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { NavbarSticky } from '@/components/common/navbar-sticky';
 import { Footer } from '@/components/common/footer';
+import { GlobalNotification } from '@/components/common/global-notification';
 
 export const metadata: Metadata = {
   title: 'Bookong | Đặt phòng lưu trú & Biệt thự cao cấp',
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className="min-h-screen flex flex-col bg-white text-main antialiased selection:bg-rausch selection:text-white">
+        <GlobalNotification />
         <NavbarSticky />
         <main className="flex-1">{children}</main>
         <Footer />

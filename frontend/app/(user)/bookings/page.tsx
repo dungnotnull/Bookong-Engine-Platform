@@ -14,14 +14,17 @@ import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
 import { ReviewFormModal } from '@/components/user/review-form-modal';
 import { ChatDrawer } from '@/components/chat/chat-drawer';
+import { useChatStore } from '@/stores/use-chat-store';
 
 export default function UserBookingsPage() {
+  const unreadCounts = useChatStore((state) => state.unreadCounts);
+  const resetUnread = useChatStore((state) => state.resetUnread);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBookingToCancel, setSelectedBookingToCancel] = useState<Booking | null>(null);
   const [selectedBookingToReview, setSelectedBookingToReview] = useState<Booking | null>(null);
-  const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(null);
+  const [activeChatBooking, setActiveChatBooking] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Pagination states
@@ -157,15 +160,28 @@ export default function UserBookingsPage() {
                     <span className="text-lg font-black text-booking-navy">{formatCurrency(totalPrice)}</span>
                     
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-bold gap-1 text-booking-navy border-booking-navy/30 hover:bg-blue-50"
-                        onClick={() => setActiveChatBookingId(booking.id)}
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        Nhắn tin với Host
-                      </Button>
+                      {(() => {
+                        const unreadCount = unreadCounts[booking.id] || 0;
+                        return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="relative font-bold gap-1 text-booking-navy border-booking-navy/30 hover:bg-blue-50"
+                            onClick={() => {
+                              resetUnread(booking.id);
+                              setActiveChatBooking(booking);
+                            }}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Nhắn tin với Host</span>
+                            {unreadCount > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center shadow-md animate-pulse">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                              </span>
+                            )}
+                          </Button>
+                        );
+                      })()}
 
                       {(booking.status === 'CHECKED_OUT' || booking.status === 'COMPLETED') && (
                         <Button
@@ -223,11 +239,12 @@ export default function UserBookingsPage() {
       )}
 
       {/* Socket.io Realtime Chat Drawer với Host */}
-      {activeChatBookingId && (
+      {activeChatBooking && (
         <ChatDrawer
-          bookingId={activeChatBookingId}
-          isOpen={!!activeChatBookingId}
-          onClose={() => setActiveChatBookingId(null)}
+          bookingId={activeChatBooking.id}
+          recipientName={activeChatBooking.room?.hotel?.name || activeChatBooking.hotelName || 'Host Chỗ Nghỉ'}
+          isOpen={!!activeChatBooking}
+          onClose={() => setActiveChatBooking(null)}
         />
       )}
 
