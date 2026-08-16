@@ -71,9 +71,9 @@ function HostRoomsContent() {
     setIsLoadingRooms(true);
     setError(null);
     try {
-      // Truyền params checkIn và checkOut để lấy số lượng khả dụng thực tế (availableQuantity)
+      // Truyền params checkIn, checkOut và includeInactive để lấy cả loại phòng bị vô hiệu hóa
       const res: any = await apiClient.get(`/hotels/${selectedHotelId}/rooms`, {
-        params: { checkIn, checkOut },
+        params: { checkIn, checkOut, includeInactive: 'true' },
       });
       const data = res?.data || res || [];
       if (Array.isArray(data)) {
@@ -92,6 +92,16 @@ function HostRoomsContent() {
   useEffect(() => {
     fetchRooms();
   }, [fetchRooms]);
+
+  const handleToggleRoomActive = async (room: Room) => {
+    try {
+      const nextActive = room.isActive === false ? true : false;
+      await apiClient.patch(`/rooms/${room.id}`, { isActive: nextActive });
+      fetchRooms();
+    } catch (err: any) {
+      setError(err?.message || 'Không thể thay đổi trạng thái hoạt động của loại phòng.');
+    }
+  };
 
   const handleOpenCreateModal = () => {
     setEditingRoom(null);
@@ -235,11 +245,17 @@ function HostRoomsContent() {
                 {rooms.map((room) => {
                   const avail = room.availableQuantity ?? room.quantity;
                   const isAvailable = avail > 0;
+                  const isRoomDisabled = room.isActive === false;
                   return (
-                    <tr key={room.id} className="hover:bg-gray-50/80 transition-smooth">
+                    <tr key={room.id} className={`hover:bg-gray-50/80 transition-smooth ${isRoomDisabled ? 'bg-red-50/20' : ''}`}>
                       <td className="py-4 px-4 font-bold text-gray-900 flex items-center gap-2">
                         <BedDouble className="w-4 h-4 text-booking-navy shrink-0" />
-                        <span>{room.name}</span>
+                        <span className={isRoomDisabled ? 'line-through text-gray-400' : ''}>{room.name}</span>
+                        {isRoomDisabled && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-100 text-red-700 border border-red-200">
+                            Tạm ngưng
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4">
                         <Badge variant="blue">{room.type}</Badge>
@@ -254,13 +270,17 @@ function HostRoomsContent() {
                         <div className="flex flex-col gap-1">
                           <span
                             className={`flex items-center gap-1 font-bold text-xs px-2.5 py-0.5 rounded-full w-max border ${
-                              isAvailable
+                              isRoomDisabled
+                                ? 'text-red-700 bg-red-50 border-red-200/60'
+                                : isAvailable
                                 ? 'text-emerald-700 bg-emerald-50 border-emerald-200/60'
                                 : 'text-red-700 bg-red-50 border-red-200/60'
                             }`}
                           >
                             <Layers className="w-3.5 h-3.5" />
-                            {isAvailable
+                            {isRoomDisabled
+                              ? 'Ngừng kinh doanh'
+                              : isAvailable
                               ? `${avail} / ${room.quantity} phòng khả dụng`
                               : `0 / ${room.quantity} phòng (Hết phòng)`}
                           </span>
@@ -272,12 +292,22 @@ function HostRoomsContent() {
                       <td className="py-4 px-4 font-black text-booking-navy">
                         {formatCurrency(room.basePrice)}
                       </td>
-                      <td className="py-4 px-4 text-right">
+                      <td className="py-4 px-4 text-right flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEditModal(room)}
                           className="text-booking-blue font-semibold hover:underline bg-blue-50/80 px-2.5 py-1 rounded-lg hover:bg-booking-blue hover:text-white transition-all"
                         >
                           Chỉnh sửa
+                        </button>
+                        <button
+                          onClick={() => handleToggleRoomActive(room)}
+                          className={`font-semibold text-xs px-2.5 py-1 rounded-lg transition-all ${
+                            isRoomDisabled
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white'
+                              : 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white'
+                          }`}
+                        >
+                          {isRoomDisabled ? 'Mở lại' : 'Tạm ngưng'}
                         </button>
                       </td>
                     </tr>

@@ -16,6 +16,8 @@ export interface Room {
   availableQuantity?: number; // Số lượng phòng thực tế khả dụng theo khoảng ngày tra cứu
   amenities: Amenity[];
   imageUrl?: string;
+  images?: string[];
+  isActive?: boolean;
   createdAt?: string;
 }
 
@@ -27,6 +29,7 @@ export interface Hotel {
   city: string;
   description: string;
   rating?: number; // Điểm đánh giá (vd 8.8)
+  starRating?: number; // Xếp hạng sao khách sạn (vd 1, 2, 3, 4, 5 sao)
   reviewCount?: number;
   coverImage?: string;
   images: string[];

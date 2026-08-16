@@ -145,10 +145,21 @@ export function ListingCard({ listing, className }: ListingCardProps) {
           <h3 className="font-extrabold text-sm text-main line-clamp-1 group-hover:text-rausch transition-colors">
             {title}
           </h3>
-          <div className="flex items-center gap-1 text-xs font-semibold text-main shrink-0">
-            <Star className="w-3.5 h-3.5 fill-main text-main" />
-            <span>{typeof rating === 'number' ? rating.toFixed(1) : '9.0'}</span>
-          </div>
+          {typeof listing.rating === 'number' && listing.rating > 0 ? (
+            <div className="flex items-center gap-1 text-xs font-semibold text-main shrink-0">
+              <Star className="w-3.5 h-3.5 fill-main text-main" />
+              <span>{listing.rating.toFixed(1)}</span>
+            </div>
+          ) : typeof listing.starRating === 'number' && listing.starRating > 0 ? (
+            <div className="flex items-center gap-0.5 text-xs font-semibold text-amber-600 shrink-0">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span>{listing.starRating} sao</span>
+            </div>
+          ) : (
+            <div className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded shrink-0">
+              Mới
+            </div>
+          )}
         </div>
 
         <p className="text-xs text-muted font-normal line-clamp-1">{location}</p>

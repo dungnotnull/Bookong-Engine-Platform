@@ -23,7 +23,7 @@ import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
 import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
-import { formatDateVi } from '@/lib/formatters';
+import { formatDateVi, normalizeImageUrl } from '@/lib/formatters';
 
 interface AdminHotelItem {
   id: string;
@@ -35,6 +35,7 @@ interface AdminHotelItem {
   starRating?: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   coverImage?: string;
+  images?: string[];
   createdAt: string;
   host?: {
     email: string;
@@ -196,26 +197,31 @@ export default function AdminHotelsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs">
                   {hotels.map((hotel) => {
-                    const coverUrl =
-                      hotel.coverImage && typeof hotel.coverImage === 'string' && !hotel.coverImage.startsWith('blob:')
-                        ? hotel.coverImage
-                        : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop';
+                    const coverUrl = normalizeImageUrl(
+                      hotel.coverImage || (hotel.images && hotel.images[0]) || ''
+                    );
 
                     return (
                       <tr key={hotel.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Hotel Name & Cover */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-                              <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-gray-200 flex items-center justify-center">
+                              {coverUrl ? (
+                                <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                              ) : (
+                                <Building2 className="w-6 h-6 text-slate-400" />
+                              )}
                             </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-sm text-slate-900">{hotel.name}</span>
-                              <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                {hotel.starRating ? hotel.starRating.toFixed(1) : '5.0'}
-                              </span>
+                              {hotel.starRating && hotel.starRating > 0 ? (
+                                <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  {hotel.starRating} sao
+                                </span>
+                              ) : null}
                             </div>
                             <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                               <MapPin className="w-3 h-3 text-booking-navy shrink-0" />

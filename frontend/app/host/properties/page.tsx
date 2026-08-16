@@ -13,6 +13,7 @@ import { Pagination } from '@/components/common/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
+import { normalizeImageUrl } from '@/lib/formatters';
 
 export default function HostPropertiesPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -93,20 +94,35 @@ export default function HostPropertiesPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {hotels.map((hotel) => {
-              const coverUrl =
-                hotel.coverImage && typeof hotel.coverImage === 'string' && !hotel.coverImage.startsWith('blob:')
-                  ? hotel.coverImage
-                  : (hotel.images && hotel.images.find((img) => img && typeof img === 'string' && !img.startsWith('blob:')))
-                  || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop';
+              const coverUrl = normalizeImageUrl(
+                hotel.coverImage || (hotel.images && hotel.images[0]) || ''
+              );
 
               return (
                 <div key={hotel.id} className="bg-white rounded-2xl border border-gray-100 shadow-airbnb overflow-hidden flex flex-col justify-between">
                   <div>
                     <div className="relative h-48 w-full bg-gray-100">
-                      <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                      {coverUrl ? (
+                        <Image src={coverUrl} alt={hotel.name} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-xs">
+                          Chưa có ảnh
+                        </div>
+                      )}
                       <div className="absolute top-3 right-3 bg-booking-navy text-white px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
-                        {hotel.rating ? hotel.rating.toFixed(1) : '9.0'}
+                        {hotel.rating && hotel.rating > 0 ? (
+                          <>
+                            <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
+                            {hotel.rating.toFixed(1)}
+                          </>
+                        ) : hotel.starRating && hotel.starRating > 0 ? (
+                          <>
+                            <Star className="w-3.5 h-3.5 fill-booking-yellow text-booking-yellow" />
+                            {hotel.starRating} sao
+                          </>
+                        ) : (
+                          'Mới'
+                        )}
                       </div>
                     </div>
 

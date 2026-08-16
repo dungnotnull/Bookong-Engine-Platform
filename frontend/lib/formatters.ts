@@ -38,3 +38,17 @@ export function calculateNights(checkIn: string, checkOut: string): number {
     return 1;
   }
 }
+
+/**
+ * Chuẩn hóa URL ảnh tĩnh tải lên từ backend server
+ */
+export function normalizeImageUrl(urlStr: string): string {
+  if (!urlStr) return '';
+  if (urlStr.startsWith('http://') || urlStr.startsWith('https://') || urlStr.startsWith('data:')) {
+    return urlStr;
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const backendOrigin = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+  const cleanPath = urlStr.startsWith('/') ? urlStr : `/${urlStr}`;
+  return `${backendOrigin}${cleanPath}`;
+}

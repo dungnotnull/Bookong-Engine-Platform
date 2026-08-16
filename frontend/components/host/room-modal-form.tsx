@@ -23,6 +23,13 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
   const [capacity, setCapacity] = useState<number>(initialData?.capacity ?? 2);
   const [quantity, setQuantity] = useState<number>(initialData?.quantity ?? 5);
   const [imageUrl, setImageUrl] = useState<string>(initialData?.imageUrl || '');
+  const [images, setImages] = useState<string[]>(
+    initialData?.images && initialData.images.length > 0
+      ? initialData.images
+      : initialData?.imageUrl
+      ? [initialData.imageUrl]
+      : []
+  );
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>(
     initialData?.amenities?.map((a) => a.id) || ['aircon', 'bath', 'balcony']
   );
@@ -41,6 +48,7 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
     setErrorMsg('');
 
     try {
+      const mainImage = images[0] || imageUrl || '';
       if (initialData?.id) {
         // Gọi API PATCH /api/v1/rooms/:id
         await apiClient.patch(`/rooms/${initialData.id}`, {
@@ -49,7 +57,8 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
           basePrice: Number(basePrice),
           capacity: Number(capacity),
           quantity: Number(quantity),
-          imageUrl,
+          imageUrl: mainImage,
+          images: images,
           amenityIds: selectedAmenityIds,
         });
       } else {
@@ -60,7 +69,8 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
           basePrice: Number(basePrice),
           capacity: Number(capacity),
           quantity: Number(quantity),
-          imageUrl,
+          imageUrl: mainImage,
+          images: images,
           amenityIds: selectedAmenityIds,
         });
       }
@@ -90,9 +100,14 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
       />
 
       <ImageUploadInput
-        label="Tải hình ảnh đại diện loại phòng từ máy tính"
-        value={imageUrl}
-        onChange={setImageUrl}
+        label="Tải bộ sưu tập hình ảnh loại phòng (Tối đa 5 ảnh)"
+        values={images}
+        multiple={true}
+        maxFiles={5}
+        onMultipleChange={(urls) => {
+          setImages(urls.slice(0, 5));
+          if (urls.length > 0) setImageUrl(urls[0]);
+        }}
       />
 
       <div className="grid grid-cols-2 gap-4">

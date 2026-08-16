@@ -6,6 +6,7 @@ export interface PropertyListing {
   datesAvailable: string;
   pricePerNight: number;
   rating: number;
+  starRating?: number;
   reviewCount: number;
   isGuestFavorite?: boolean;
   images: string[];
