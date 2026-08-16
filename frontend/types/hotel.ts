@@ -16,6 +16,8 @@ export interface Room {
   availableQuantity?: number; // Số lượng phòng thực tế khả dụng theo khoảng ngày tra cứu
   amenities: Amenity[];
   imageUrl?: string;
+  images?: string[];
+  isActive?: boolean;
   createdAt?: string;
 }
 

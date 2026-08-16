@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { MapPin, Star, Share2, Heart, Wifi, Waves, Car, Wind } from 'lucide-react';
+import { MapPin, Star, Share2, Heart, Wifi, Waves, Car, Wind, Grid } from 'lucide-react';
 import { RoomSelectionTable } from '@/components/hotel-detail/room-selection-table';
 import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ImageGalleryModal } from '@/components/common/image-gallery-modal';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 
@@ -20,6 +21,9 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   // Tính số đêm (Nights) từ checkIn và checkOut
   let nights = 1;
@@ -40,13 +44,20 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
         ...(checkOut && { checkOut }),
       }).toString();
 
-      const res: any = await apiClient.get(`/hotels/${params.id}${queryStr ? `?${queryStr}` : ''}`);
-      const data = res?.data || res;
+      const [hotelRes, reviewsRes]: [any, any] = await Promise.all([
+        apiClient.get(`/hotels/${params.id}${queryStr ? `?${queryStr}` : ''}`),
+        apiClient.get(`/hotels/${params.id}/reviews`).catch(() => []),
+      ]);
+
+      const data = hotelRes?.data || hotelRes;
       if (data && typeof data === 'object' && data.id) {
         setHotel(data);
       } else {
         setHotel(null);
       }
+
+      const revList = Array.isArray(reviewsRes?.data) ? reviewsRes.data : Array.isArray(reviewsRes) ? reviewsRes : [];
+      setReviews(revList);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải thông tin chi tiết khách sạn. Vui lòng thử lại sau.');
       setHotel(null);
@@ -156,18 +167,36 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
       </div>
 
       {/* Hero Photo Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-80 md:h-96 rounded-2xl overflow-hidden shadow-airbnb">
-        <div className="md:col-span-2 relative h-full">
-          <Image src={galleryImages[0]} alt="Cover" fill className="object-cover" />
+      <div className="relative grid grid-cols-1 md:grid-cols-3 gap-3 h-80 md:h-96 rounded-2xl overflow-hidden shadow-airbnb group">
+        <div
+          onClick={() => { setGalleryIndex(0); setIsGalleryOpen(true); }}
+          className="md:col-span-2 relative h-full cursor-pointer overflow-hidden"
+        >
+          <Image src={galleryImages[0]} alt="Cover" fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
         </div>
         <div className="grid grid-rows-2 gap-3 h-full">
-          <div className="relative h-full">
-            <Image src={galleryImages[1] || galleryImages[0]} alt="Gallery 1" fill className="object-cover" />
+          <div
+            onClick={() => { setGalleryIndex(1); setIsGalleryOpen(true); }}
+            className="relative h-full cursor-pointer overflow-hidden"
+          >
+            <Image src={galleryImages[1] || galleryImages[0]} alt="Gallery 1" fill className="object-cover hover:scale-105 transition-transform duration-500" />
           </div>
-          <div className="relative h-full">
-            <Image src={galleryImages[2] || galleryImages[0]} alt="Gallery 2" fill className="object-cover" />
+          <div
+            onClick={() => { setGalleryIndex(2); setIsGalleryOpen(true); }}
+            className="relative h-full cursor-pointer overflow-hidden"
+          >
+            <Image src={galleryImages[2] || galleryImages[0]} alt="Gallery 2" fill className="object-cover hover:scale-105 transition-transform duration-500" />
           </div>
         </div>
+
+        {/* Button 'Xem tất cả hình ảnh' */}
+        <button
+          onClick={() => { setGalleryIndex(0); setIsGalleryOpen(true); }}
+          className="absolute bottom-4 right-4 px-4 py-2.5 rounded-xl bg-white/90 hover:bg-white text-booking-navy font-bold text-xs shadow-lg hover:scale-105 transition-all flex items-center gap-2 border border-gray-200 backdrop-blur-md"
+        >
+          <Grid className="w-4 h-4 text-booking-blue" />
+          Xem tất cả hình ảnh ({galleryImages.length})
+        </button>
       </div>
 
       {/* Description & Amenities Overview */}
@@ -218,6 +247,41 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
 
       {/* Interactive Room Table */}
       <RoomSelectionTable rooms={hotel.rooms || []} nights={nights} checkIn={checkIn} checkOut={checkOut} />
+
+      {/* Verified Guest Reviews List Section */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb p-6 space-y-4">
+        <h3 className="text-lg font-bold text-booking-navy">Đánh giá thực tế từ khách đã lưu trú</h3>
+        {reviews.length === 0 ? (
+          <p className="text-xs text-gray-500 italic">Chưa có đánh giá nào cho khách sạn này. Đánh giá mới nhất sẽ xuất hiện sau khi khách hàng hoàn tất lưu trú.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {reviews.map((rev: any, idx: number) => (
+              <div key={rev.id || idx} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900">{rev.user?.fullName || rev.userName || 'Khách xác thực'}</span>
+                  <span className="bg-booking-navy text-white text-[11px] font-black px-2 py-0.5 rounded">
+                    {((rev.cleanlinessRating + rev.locationRating + rev.serviceRating + rev.valueRating) / 4).toFixed(1)} / 10
+                  </span>
+                </div>
+                <p className="text-gray-600 leading-relaxed italic">&quot;{rev.comment}&quot;</p>
+                <div className="text-[10px] text-gray-400 font-semibold pt-1 border-t border-gray-200 flex justify-between">
+                  <span>Vị trí: {rev.locationRating}/10 · Sạch sẽ: {rev.cleanlinessRating}/10</span>
+                  <span>Đã lưu trú</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Interactive Gallery Modal */}
+      <ImageGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        images={galleryImages}
+        initialIndex={galleryIndex}
+        title={hotel.name}
+      />
     </div>
   );
 }

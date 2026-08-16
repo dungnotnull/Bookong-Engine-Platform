@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle, MessageSquare } from 'lucide-react';
 import { Booking } from '@/types/booking';
 import { formatCurrency, formatDateVi } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,16 @@ import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
 import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
+import { ReviewFormModal } from '@/components/user/review-form-modal';
+import { ChatDrawer } from '@/components/chat/chat-drawer';
 
 export default function UserBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBookingToCancel, setSelectedBookingToCancel] = useState<Booking | null>(null);
+  const [selectedBookingToReview, setSelectedBookingToReview] = useState<Booking | null>(null);
+  const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Pagination states
@@ -152,9 +156,24 @@ export default function UserBookingsPage() {
                   <div className="flex flex-col md:items-end justify-between gap-2 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0">
                     <span className="text-lg font-black text-booking-navy">{formatCurrency(totalPrice)}</span>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="font-bold gap-1 text-booking-navy border-booking-navy/30 hover:bg-blue-50"
+                        onClick={() => setActiveChatBookingId(booking.id)}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        Nhắn tin với Host
+                      </Button>
+
                       {(booking.status === 'CHECKED_OUT' || booking.status === 'COMPLETED') && (
-                        <Button variant="yellow" size="sm" className="font-bold text-slate-900">
+                        <Button
+                          variant="yellow"
+                          size="sm"
+                          className="font-bold text-slate-900"
+                          onClick={() => setSelectedBookingToReview(booking)}
+                        >
                           Viết Đánh giá
                         </Button>
                       )}
@@ -187,6 +206,29 @@ export default function UserBookingsPage() {
             }}
           />
         </>
+      )}
+
+      {/* Modal Viết Đánh giá Xác thực */}
+      {selectedBookingToReview && (
+        <ReviewFormModal
+          isOpen={!!selectedBookingToReview}
+          onClose={() => setSelectedBookingToReview(null)}
+          hotelId={selectedBookingToReview.room?.hotel?.id || selectedBookingToReview.room?.hotelId || selectedBookingToReview.hotelId || ''}
+          bookingCode={selectedBookingToReview.code || selectedBookingToReview.id}
+          onSuccess={() => {
+            setSelectedBookingToReview(null);
+            fetchBookings();
+          }}
+        />
+      )}
+
+      {/* Socket.io Realtime Chat Drawer với Host */}
+      {activeChatBookingId && (
+        <ChatDrawer
+          bookingId={activeChatBookingId}
+          isOpen={!!activeChatBookingId}
+          onClose={() => setActiveChatBookingId(null)}
+        />
       )}
 
       {/* Modal Xác nhận Hủy phòng theo Chính sách */}
