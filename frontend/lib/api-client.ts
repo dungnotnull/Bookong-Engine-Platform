@@ -14,7 +14,9 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('bookong_token');
+      const localToken = localStorage.getItem('bookong_token');
+      const cookieMatch = document.cookie.match(/bookong_token=([^;]+)/);
+      const token = localToken || (cookieMatch ? cookieMatch[1] : null);
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }

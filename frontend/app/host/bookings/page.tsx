@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { MessageSquare } from 'lucide-react';
 import { BookingStatus } from '@/types/booking';
 import { formatCurrency, formatDateVi } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -10,22 +11,36 @@ import { ErrorState } from '@/components/common/error-state';
 import { EmptyState } from '@/components/common/empty-state';
 import { Pagination } from '@/components/common/pagination';
 import { apiClient } from '@/lib/api-client';
+import { ChatDrawer } from '@/components/chat/chat-drawer';
 
 interface HostBookingItem {
   id: string;
-  code: string;
-  customerName: string;
-  roomName: string;
+  code?: string;
+  customerName?: string;
+  roomName?: string;
   checkIn: string;
   checkOut: string;
-  amount: number;
+  amount?: number;
+  totalPrice?: number;
+  totalAmount?: number;
   status: BookingStatus;
+  user?: {
+    id: string;
+    email?: string;
+    fullName?: string;
+  };
+  room?: {
+    id: string;
+    name?: string;
+    type?: string;
+  };
 }
 
 export default function HostBookingsPage() {
   const [hostBookings, setHostBookings] = useState<HostBookingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(null);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -105,25 +120,39 @@ export default function HostBookingsPage() {
                     <th className="p-4">Thời gian ở</th>
                     <th className="p-4">Tổng tiền</th>
                     <th className="p-4">Trạng thái</th>
-                    <th className="p-4 text-right">Đổi trạng thái (Host Action)</th>
+                    <th className="p-4 text-right">Đổi trạng thái & Chat</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {hostBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-gray-50/80">
-                      <td className="p-4 font-bold text-booking-navy">{b.code || b.id}</td>
-                      <td className="p-4 font-bold text-gray-900">{b.customerName || 'Khách vãng lai'}</td>
-                      <td className="p-4 text-gray-700">{b.roomName || 'Phòng tiêu chuẩn'}</td>
-                      <td className="p-4 text-gray-500">
-                        {formatDateVi(b.checkIn)} - {formatDateVi(b.checkOut)}
-                      </td>
-                      <td className="p-4 font-black text-booking-navy">{formatCurrency(b.amount || 0)}</td>
+                  {hostBookings.map((b) => {
+                    const displayCode = b.code || b.id.substring(0, 8).toUpperCase();
+                    const customerName = b.user?.fullName || b.user?.email || b.customerName || 'Khách vãng lai';
+                    const roomName = b.room?.name || b.roomName || 'Phòng tiêu chuẩn';
+                    const totalPrice = b.totalPrice ?? b.totalAmount ?? b.amount ?? 0;
+                    return (
+                      <tr key={b.id} className="hover:bg-gray-50/80">
+                        <td className="p-4 font-bold text-booking-navy">{displayCode}</td>
+                        <td className="p-4 font-bold text-gray-900">{customerName}</td>
+                        <td className="p-4 text-gray-700">{roomName}</td>
+                        <td className="p-4 text-gray-500">
+                          {formatDateVi(b.checkIn)} - {formatDateVi(b.checkOut)}
+                        </td>
+                        <td className="p-4 font-black text-booking-navy">{formatCurrency(totalPrice)}</td>
                       <td className="p-4">
                         <Badge variant={b.status === 'CONFIRMED' ? 'blue' : b.status === 'CHECKED_OUT' ? 'navy' : 'green'}>
                           {b.status}
                         </Badge>
                       </td>
                       <td className="p-4 text-right space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="font-bold gap-1 text-booking-navy border-booking-navy/30"
+                          onClick={() => setActiveChatBookingId(b.id)}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          Chat
+                        </Button>
                         {b.status === 'CONFIRMED' && (
                           <Button size="sm" variant="action" onClick={() => updateStatus(b.id, 'CHECKED_IN')}>
                             Nhận phòng (Check-in)
@@ -136,7 +165,8 @@ export default function HostBookingsPage() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>
@@ -153,6 +183,15 @@ export default function HostBookingsPage() {
             }}
           />
         </>
+      )}
+
+      {/* Socket.io Realtime Chat Drawer với Guest */}
+      {activeChatBookingId && (
+        <ChatDrawer
+          bookingId={activeChatBookingId}
+          isOpen={!!activeChatBookingId}
+          onClose={() => setActiveChatBookingId(null)}
+        />
       )}
     </div>
   );

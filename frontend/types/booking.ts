@@ -27,6 +27,7 @@ export interface PriceBreakdown {
 export interface Booking {
   id: string;
   code?: string; // Mã đặt phòng hiển thị cho khách
+  hotelId?: string;
   roomId?: string;
   roomName?: string;
   hotelName?: string;
@@ -43,6 +44,7 @@ export interface Booking {
   createdAt?: string;
   room?: {
     id: string;
+    hotelId?: string;
     name: string;
     type?: string;
     imageUrl?: string;

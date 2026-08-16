@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Users, Check, Sparkles } from 'lucide-react';
+import { Users, Check, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { Room } from '@/types/hotel';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, normalizeImageUrl } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ImageGalleryModal } from '@/components/common/image-gallery-modal';
 
 interface RoomSelectionTableProps {
   rooms: Room[];
@@ -20,6 +21,8 @@ interface RoomSelectionTableProps {
 export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }: RoomSelectionTableProps) {
   const searchParams = useSearchParams();
 
+  const [selectedRoomForGallery, setSelectedRoomForGallery] = useState<Room | null>(null);
+
   const effectiveCheckIn = checkIn || searchParams.get('checkIn') || '';
   const effectiveCheckOut = checkOut || searchParams.get('checkOut') || '';
   const effectiveGuests = guests || searchParams.get('guests') || '';
@@ -30,6 +33,16 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
   if (effectiveGuests) queryParams.set('guests', String(effectiveGuests));
 
   const queryString = queryParams.toString();
+
+  const getRoomImages = (room: Room): string[] => {
+    if (room.images && room.images.length > 0) {
+      return room.images;
+    }
+    if (room.imageUrl) {
+      return [room.imageUrl];
+    }
+    return ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop'];
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-airbnb overflow-hidden">
@@ -42,7 +55,7 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-100/70 border-b border-gray-200 text-[11px] font-bold text-gray-600 uppercase">
-              <th className="p-4">Loại phòng</th>
+              <th className="p-4">Hình ảnh & Loại phòng</th>
               <th className="p-4">Sức chứa</th>
               <th className="p-4">Giá cho {nights} đêm</th>
               <th className="p-4">Điều khoản đặt phòng</th>
@@ -53,14 +66,46 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
             {rooms.map((room) => {
               const totalPrice = room.basePrice * nights;
               const checkoutHref = `/checkout/${room.id}${queryString ? `?${queryString}` : ''}`;
+              const roomImgs = getRoomImages(room);
+              const mainImgUrl = normalizeImageUrl(roomImgs[0]);
+
               return (
                 <tr key={room.id} className="hover:bg-blue-50/30 transition-smooth">
                   <td className="p-4">
-                    <h4 className="font-extrabold text-sm text-booking-navy">{room.name}</h4>
-                    <p className="text-[11px] text-gray-500 mt-0.5">Loại: {room.type}</p>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      <Badge variant="blue">Điều hòa</Badge>
-                      <Badge variant="gray">Ban công</Badge>
+                    <div className="flex items-start gap-3">
+                      {/* Room Image Thumbnail */}
+                      <button
+                        onClick={() => setSelectedRoomForGallery(room)}
+                        className="relative w-24 h-20 rounded-xl overflow-hidden border border-gray-200 shrink-0 group bg-gray-100 shadow-xs hover:border-booking-blue transition-all"
+                        title="Click để xem bộ sưu tập hình ảnh loại phòng này"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={mainImgUrl} alt={room.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <span className="p-1 rounded-full bg-white/80 text-booking-navy">
+                            <ImageIcon className="w-4 h-4" />
+                          </span>
+                        </div>
+                        {roomImgs.length > 1 && (
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-bold backdrop-blur-xs">
+                            +{roomImgs.length} ảnh
+                          </div>
+                        )}
+                      </button>
+
+                      <div>
+                        <h4
+                          onClick={() => setSelectedRoomForGallery(room)}
+                          className="font-extrabold text-sm text-booking-navy hover:underline cursor-pointer"
+                        >
+                          {room.name}
+                        </h4>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Loại: {room.type}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <Badge variant="blue">Điều hòa</Badge>
+                          <Badge variant="gray">Ban công</Badge>
+                        </div>
+                      </div>
                     </div>
                   </td>
 
@@ -98,6 +143,16 @@ export function RoomSelectionTable({ rooms, nights, checkIn, checkOut, guests }:
           </tbody>
         </table>
       </div>
+
+      {/* Interactive Gallery Modal for Room */}
+      {selectedRoomForGallery && (
+        <ImageGalleryModal
+          isOpen={!!selectedRoomForGallery}
+          onClose={() => setSelectedRoomForGallery(null)}
+          images={getRoomImages(selectedRoomForGallery)}
+          title={`Bộ sưu tập hình ảnh: ${selectedRoomForGallery.name}`}
+        />
+      )}
     </div>
   );
 }
