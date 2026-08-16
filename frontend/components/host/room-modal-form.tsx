@@ -100,11 +100,12 @@ export function RoomModalForm({ hotelId, initialData, onSuccess, onCancel }: Roo
       />
 
       <ImageUploadInput
-        label="Tải danh sách nhiều hình ảnh của loại phòng này từ máy tính"
+        label="Tải bộ sưu tập hình ảnh loại phòng (Tối đa 5 ảnh)"
         values={images}
         multiple={true}
+        maxFiles={5}
         onMultipleChange={(urls) => {
-          setImages(urls);
+          setImages(urls.slice(0, 5));
           if (urls.length > 0) setImageUrl(urls[0]);
         }}
       />

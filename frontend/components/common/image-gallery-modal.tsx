@@ -55,6 +55,26 @@ export function ImageGalleryModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleNext, handlePrev, onClose]);
 
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    setTouchStartX(null);
+  };
+
   if (!isOpen || normalizedImages.length === 0) return null;
 
   const currentImage = normalizedImages[currentIndex] || normalizedImages[0];
@@ -85,7 +105,11 @@ export function ImageGalleryModal({
       </div>
 
       {/* Main Image Stage */}
-      <div className="relative flex-1 flex items-center justify-center p-4 min-h-0 select-none">
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative flex-1 flex items-center justify-center p-4 min-h-0 select-none cursor-grab active:cursor-grabbing"
+      >
         {/* Navigation Buttons */}
         {normalizedImages.length > 1 && (
           <>
