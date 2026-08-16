@@ -34,35 +34,40 @@ export class RoomsService {
   }
 
   async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string, includeInactive?: boolean) {
-    // Nếu có checkIn và checkOut, tính toán availableQuantity bằng Raw SQL
-    if (checkIn && checkOut) {
-      const params = [hotelId, checkIn, checkOut];
-      const rawSql = `
-        SELECT r.*,
-               (r.quantity - COALESCE(b.booked_count, 0))::integer AS "availableQuantity"
-        FROM "Room" r
-        LEFT JOIN (
-          SELECT "roomId", COUNT(id)::integer as booked_count
-          FROM "Booking"
-          WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
-            AND "checkIn" < $3::timestamp
-            AND "checkOut" > $2::timestamp
-          GROUP BY "roomId"
-        ) b ON r.id = b."roomId"
-        WHERE r."hotelId" = $1 ${includeInactive ? '' : 'AND r."isActive" = true'}
-      `;
+    let effectiveCheckIn = checkIn;
+    let effectiveCheckOut = checkOut;
+
+    // Nếu không có checkIn/checkOut, mặc định tính khả dụng cho hiện tại (đêm nay)
+    if (!effectiveCheckIn || !effectiveCheckOut) {
+      const today = new Date();
+      today.setHours(14, 0, 0, 0); // Default check-in 14:00
       
-      const results = await this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params);
-      return results;
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(12, 0, 0, 0); // Default check-out 12:00
+
+      effectiveCheckIn = today.toISOString();
+      effectiveCheckOut = tomorrow.toISOString();
     }
 
-    const rooms = await this.prisma.room.findMany({ 
-      where: { 
-        hotelId, 
-        ...(includeInactive ? {} : { isActive: true }) 
-      } 
-    });
-    return rooms.map(room => ({ ...room, availableQuantity: room.quantity }));
+    const params = [hotelId, effectiveCheckIn, effectiveCheckOut];
+    const rawSql = `
+      SELECT r.*,
+             GREATEST(0, (r.quantity - COALESCE(b.booked_count, 0)))::integer AS "availableQuantity"
+      FROM "Room" r
+      LEFT JOIN (
+        SELECT "roomId", COALESCE(SUM("roomQuantity"), 0)::integer as booked_count
+        FROM "Booking"
+        WHERE status IN ('CONFIRMED', 'PENDING_PAYMENT')
+          AND "checkIn" < $3::timestamp
+          AND "checkOut" > $2::timestamp
+        GROUP BY "roomId"
+      ) b ON r.id = b."roomId"
+      WHERE r."hotelId" = $1 ${includeInactive ? '' : 'AND r."isActive" = true'}
+    `;
+    
+    const results = await this.prisma.$queryRawUnsafe<any[]>(rawSql, ...params);
+    return results;
   }
 
   async findOne(id: string) {
@@ -108,22 +113,27 @@ export class RoomsService {
   }
 
   async syncVector(roomId: string) {
-    const room = await this.prisma.room.findUnique({
-      where: { id: roomId },
-      include: { roomAmenities: { include: { amenity: true } } }
-    });
-    
-    if (!room) return;
+    try {
+      const room = await this.prisma.room.findUnique({
+        where: { id: roomId },
+        include: { roomAmenities: { include: { amenity: true } } }
+      });
+      
+      if (!room) return;
 
-    const amenityNames = room.roomAmenities.map(ha => ha.amenity.name).join(', ');
-    const textToEmbed = `${room.name} (${room.type}) - Sức chứa ${room.capacity} người - Tiện nghi: ${amenityNames}`.trim();
-    
-    if (!textToEmbed) return;
+      const amenityNames = room.roomAmenities.map(ha => ha.amenity.name).join(', ');
+      const textToEmbed = `${room.name} (${room.type}) - Sức chứa ${room.capacity} người - Tiện nghi: ${amenityNames}`.trim();
+      
+      if (!textToEmbed) return;
 
-    const vector = await this.vectorService.getEmbedding(textToEmbed);
-    const vectorStr = `[${vector.join(',')}]`;
+      const vector = await this.vectorService.getEmbedding(textToEmbed);
+      const vectorStr = `[${vector.join(',')}]`;
 
-    // Raw query to update pgvector column
-    await this.prisma.$executeRaw`UPDATE "Room" SET "searchVector" = ${vectorStr}::vector WHERE id = ${room.id}`;
+      // Raw query to update pgvector column
+      await this.prisma.$executeRaw`UPDATE "Room" SET "searchVector" = ${vectorStr}::vector WHERE id = ${room.id}`;
+    } catch (error) {
+      console.error(`Failed to sync vector for room ${roomId}:`, error.message);
+      // We swallow the error so that the main request (create/update room) can succeed
+    }
   }
 }

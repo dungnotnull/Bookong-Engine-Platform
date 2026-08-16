@@ -28,6 +28,14 @@ export class MessagesService {
 
     return this.prisma.message.findMany({
       where: { bookingId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            fullName: true,
+          }
+        }
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -51,6 +59,14 @@ export class MessagesService {
         receiverId,
         content,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            fullName: true,
+          }
+        }
+      }
     });
   }
 }
