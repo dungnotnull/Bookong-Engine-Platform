@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsDateString } from 'class-validator';
-import { DiscountType } from '@prisma/client';
+import { DiscountType, CouponStatus, CouponVisibility } from '@prisma/client';
 
 export class CreateCouponDto {
   @IsString()
@@ -23,6 +23,22 @@ export class CreateCouponDto {
   @IsOptional()
   @IsNumber()
   quantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  usageLimitPerUser?: number;
+
+  @IsOptional()
+  @IsEnum(CouponStatus)
+  status?: CouponStatus;
+
+  @IsOptional()
+  @IsEnum(CouponVisibility)
+  visibility?: CouponVisibility;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
 
   @IsOptional()
   @IsDateString()

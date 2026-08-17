@@ -30,17 +30,17 @@ export class CronService {
     this.logger.log(`Auto-checked out ${result.count} bookings`);
   }
 
-  // Run every hour to clear stale PENDING_PAYMENT bookings
-  @Cron(CronExpression.EVERY_HOUR)
+  // Run every minute to clear stale PENDING_PAYMENT bookings older than 15 minutes
+  @Cron(CronExpression.EVERY_MINUTE)
   async handleStalePendingBookings() {
     this.logger.log('Running stale pending bookings cron job');
-    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
 
     const result = await this.prisma.booking.updateMany({
       where: {
         status: BookingStatus.PENDING_PAYMENT,
         createdAt: {
-          lt: thirtyMinsAgo,
+          lt: fifteenMinsAgo,
         },
       },
       data: {

@@ -36,6 +36,7 @@ model User {
   reviews           Review[]
   sentMessages      Message[] @relation("SentMessages")
   receivedMessages  Message[] @relation("ReceivedMessages")
+  couponUsages      CouponUsage[]
 }
 
 model Hotel {
@@ -137,6 +138,7 @@ model Booking {
   updatedAt     DateTime      @updatedAt
   reviews       Review?
   messages      Message[]
+  couponUsage   CouponUsage?
 
   @@index([checkIn])
   @@index([checkOut])
@@ -157,6 +159,18 @@ model PricingRule {
   createdAt  DateTime @default(now())
 }
 
+enum CouponStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum CouponVisibility {
+  PUBLIC
+  HIDDEN
+}
+
 enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -170,10 +184,31 @@ model Coupon {
   maxDiscount   Float?
   minSpend      Float?
   quantity      Int?
+  usageLimitPerUser Int      @default(1)
+  status        CouponStatus @default(DRAFT)
+  visibility    CouponVisibility @default(PUBLIC)
   hostId        String?
   host          User?        @relation(fields: [hostId], references: [id])
+  startDate     DateTime?
   expiryDate    DateTime?
   createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  usages        CouponUsage[]
+}
+
+model CouponUsage {
+  id            String   @id @default(uuid())
+  userId        String
+  couponId      String
+  bookingId     String   @unique
+  discountValue Float
+  user          User     @relation(fields: [userId], references: [id])
+  coupon        Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  usedAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([couponId])
 }
 
 model Wishlist {

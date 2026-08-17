@@ -63,7 +63,7 @@ export class BookingsService {
     return { holdId, expiresAt };
   }
 
-  async calculatePrice(data: CalculatePriceDto) {
+  async calculatePrice(data: CalculatePriceDto & { userId?: string }) {
     const checkIn = new Date(data.checkIn);
     checkIn.setHours(14, 0, 0, 0);
     const checkOut = new Date(data.checkOut);
@@ -112,20 +112,84 @@ export class BookingsService {
     }
 
     let discountAmount = 0;
+    let validCouponId: string | null = null;
+    
     if (data.discountCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: data.discountCode } });
-      if (coupon && (!coupon.expiryDate || coupon.expiryDate > new Date())) {
-        const subtotal = basePriceTotal + surgeTotal;
-        if (!coupon.minSpend || subtotal >= coupon.minSpend) {
-          if (coupon.discountType === 'PERCENTAGE') {
-            discountAmount = subtotal * (coupon.amount / 100);
-            if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-              discountAmount = coupon.maxDiscount;
-            }
-          } else {
-            discountAmount = coupon.amount;
+      const coupon = await this.prisma.coupon.findUnique({ 
+        where: { code: data.discountCode },
+        include: { _count: { select: { usages: true } } }
+      });
+      
+      if (coupon) {
+        let isValid = true;
+        let errorMessage = '';
+
+        // 1. Status Check
+        if (coupon.status !== 'ACTIVE') {
+          isValid = false;
+          errorMessage = 'Coupon is not active';
+        }
+
+        // 2. Date Check
+        const now = new Date();
+        if (isValid && coupon.startDate && coupon.startDate > now) {
+          isValid = false;
+          errorMessage = 'Coupon is not yet valid';
+        }
+        if (isValid && coupon.expiryDate && coupon.expiryDate < now) {
+          isValid = false;
+          errorMessage = 'Coupon has expired';
+        }
+
+        // 3. Quantity Check
+        if (isValid && coupon.quantity && coupon._count.usages >= coupon.quantity) {
+          isValid = false;
+          errorMessage = 'Coupon usage limit reached';
+        }
+
+        // 4. Host Scope Check
+        if (isValid && coupon.hostId && coupon.hostId !== room.hotel.hostId) {
+          isValid = false;
+          errorMessage = 'Coupon is not applicable for this hotel';
+        }
+
+        // 5. User Usage Limit Check
+        if (isValid && data.userId) {
+          const userUsages = await this.prisma.couponUsage.count({
+            where: { couponId: coupon.id, userId: data.userId }
+          });
+          if (userUsages >= coupon.usageLimitPerUser) {
+            isValid = false;
+            errorMessage = 'You have exceeded the usage limit for this coupon';
           }
         }
+
+        // 6. Min Spend & Calculation
+        if (isValid) {
+          const subtotal = basePriceTotal + surgeTotal;
+          if (coupon.minSpend && subtotal < coupon.minSpend) {
+            isValid = false;
+            errorMessage = `Minimum spend of ${coupon.minSpend} required`;
+          } else {
+            validCouponId = coupon.id;
+            if (coupon.discountType === 'PERCENTAGE') {
+              discountAmount = subtotal * (coupon.amount / 100);
+              if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+                discountAmount = coupon.maxDiscount;
+              }
+            } else {
+              discountAmount = coupon.amount;
+            }
+          }
+        }
+
+        if (!isValid && data.userId) {
+          // If userId is present, we might want to throw error to inform the frontend
+          // For now we just silently ignore or we can throw:
+          throw new BadRequestException(errorMessage);
+        }
+      } else if (data.userId) {
+         throw new BadRequestException('Invalid coupon code');
       }
     }
 
@@ -133,7 +197,8 @@ export class BookingsService {
       basePrice: basePriceTotal,
       seasonalSurge: surgeTotal,
       discountAmount,
-      totalAmount: Math.max(0, basePriceTotal + surgeTotal - discountAmount)
+      totalAmount: Math.max(0, basePriceTotal + surgeTotal - discountAmount),
+      couponId: validCouponId
     };
   }
 
@@ -153,7 +218,8 @@ export class BookingsService {
       checkOut: holdData.checkOut,
       guests: holdData.guests,
       roomQuantity: holdData.roomQuantity,
-      discountCode: data.discountCode
+      discountCode: data.discountCode,
+      userId // pass userId for limits check
     });
 
     // Transaction
@@ -191,7 +257,19 @@ export class BookingsService {
         }
       });
 
-      // 3. Remove hold
+      // 3. Create Coupon Usage if applicable
+      if (priceBreakdown.couponId) {
+        await tx.couponUsage.create({
+          data: {
+            userId,
+            couponId: priceBreakdown.couponId,
+            bookingId: booking.id,
+            discountValue: priceBreakdown.discountAmount
+          }
+        });
+      }
+
+      // 4. Remove hold
       await this.cacheManager.del(`hold:${data.holdId}`);
 
       return booking;

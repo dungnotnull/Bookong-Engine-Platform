@@ -22,10 +22,21 @@ export class CouponsService {
 
   async findAll(userId: string, role: Role) {
     if (role === Role.ADMIN) {
-      return this.prisma.coupon.findMany();
+      return this.prisma.coupon.findMany({
+        include: {
+          _count: {
+            select: { usages: true }
+          }
+        }
+      });
     }
     return this.prisma.coupon.findMany({
-      where: { hostId: userId }
+      where: { hostId: userId },
+      include: {
+        _count: {
+          select: { usages: true }
+        }
+      }
     });
   }
 
