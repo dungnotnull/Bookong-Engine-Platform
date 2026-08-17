@@ -8,9 +8,10 @@ import { PaginationQueryDto } from '../common/dto/pagination.dto';
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('hold')
-  async holdRoom(@Body() data: HoldRoomDto) {
-    return this.bookingsService.holdRoom(data);
+  async holdRoom(@Request() req: any, @Body() data: HoldRoomDto) {
+    return this.bookingsService.holdRoom(req.user.id, data);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -35,7 +35,7 @@ export class BookingsService {
     return (room.quantity - bookedRooms) >= roomQuantity;
   }
 
-  async holdRoom(data: HoldRoomDto) {
+  async holdRoom(userId: string, data: HoldRoomDto) {
     const checkIn = new Date(data.checkIn);
     checkIn.setHours(14, 0, 0, 0);
     const checkOut = new Date(data.checkOut);
@@ -48,19 +48,47 @@ export class BookingsService {
     if (checkIn >= checkOut) throw new BadRequestException('Check-out must be after check-in');
     
     const roomQuantity = data.roomQuantity || 1;
-    const isAvailable = await this.checkAvailability(data.roomId, checkIn, checkOut, data.guests, roomQuantity);
-    if (!isAvailable) throw new BadRequestException('Room is not available for these dates or quantity');
 
-    const holdId = uuidv4();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Check availability with row level lock or just overlapping count
+      const room = await tx.room.findUnique({ where: { id: data.roomId } });
+      if (!room) throw new BadRequestException('Room not found');
+      
+      const overlapping = await tx.booking.aggregate({
+        _sum: { roomQuantity: true },
+        where: {
+          roomId: data.roomId,
+          status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
+          OR: [
+            { checkIn: { lt: checkOut }, checkOut: { gt: checkIn } }
+          ]
+        }
+      });
+      const bookedRooms = overlapping._sum?.roomQuantity || 0;
+      if ((room.quantity - bookedRooms) < roomQuantity) {
+        throw new BadRequestException('Room is not available for these dates or quantity');
+      }
 
-    await this.cacheManager.set(`hold:${holdId}`, {
-      ...data,
-      roomQuantity,
-      expiresAt,
-    }, 10 * 60 * 1000); // 10 mins TTL
+      // 2. Calculate base price to store in DB
+      const priceBreakdown = await this.calculatePrice({ ...data, userId });
+      
+      // 3. Create PENDING_PAYMENT booking
+      const booking = await tx.booking.create({
+        data: {
+          userId,
+          roomId: data.roomId,
+          checkIn,
+          checkOut,
+          guests: data.guests,
+          roomQuantity,
+          totalPrice: priceBreakdown.totalAmount,
+          status: 'PENDING_PAYMENT'
+        }
+      });
 
-    return { holdId, expiresAt };
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins (cron threshold)
+      return { holdId: booking.id, expiresAt };
+    });
   }
 
   async calculatePrice(data: CalculatePriceDto & { userId?: string }) {
@@ -203,61 +231,38 @@ export class BookingsService {
   }
 
   async submitBooking(userId: string, data: SubmitBookingDto) {
-    const holdData = await this.cacheManager.get(`hold:${data.holdId}`) as any;
-    if (!holdData) throw new BadRequestException('Hold expired or invalid');
-
-    const checkIn = new Date(holdData.checkIn);
-    checkIn.setHours(14, 0, 0, 0);
-    const checkOut = new Date(holdData.checkOut);
-    checkOut.setHours(12, 0, 0, 0);
-
-    // Calculate final price
-    const priceBreakdown = await this.calculatePrice({
-      roomId: holdData.roomId,
-      checkIn: holdData.checkIn,
-      checkOut: holdData.checkOut,
-      guests: holdData.guests,
-      roomQuantity: holdData.roomQuantity,
-      discountCode: data.discountCode,
-      userId // pass userId for limits check
-    });
-
-    // Transaction
     return this.prisma.$transaction(async (tx) => {
-      // 1. Verify availability one last time
-      const room = await tx.room.findUnique({ where: { id: holdData.roomId } });
-      const overlapping = await tx.booking.aggregate({
-        _sum: { roomQuantity: true },
-        where: {
-          roomId: holdData.roomId,
-          status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
-          OR: [
-            { checkIn: { lt: checkOut }, checkOut: { gt: checkIn } }
-          ]
-        }
+      // 1. Lấy bản ghi Booking đang được hold trong Database
+      const booking = await tx.booking.findUnique({
+        where: { id: data.holdId }
       });
-      const bookedRooms = overlapping._sum?.roomQuantity || 0;
 
-      if (!room || (room.quantity - bookedRooms) < holdData.roomQuantity) {
-        throw new BadRequestException('Room is no longer available in the requested quantity');
+      if (!booking || booking.status !== 'PENDING_PAYMENT' || booking.userId !== userId) {
+        throw new BadRequestException('Hold expired or invalid');
       }
 
-      // 2. Create Booking
-      const booking = await tx.booking.create({
+      // 2. Tính lại giá tiền cuối cùng (áp mã giảm giá nếu có)
+      const priceBreakdown = await this.calculatePrice({
+        roomId: booking.roomId,
+        checkIn: booking.checkIn.toISOString(),
+        checkOut: booking.checkOut.toISOString(),
+        guests: booking.guests,
+        roomQuantity: booking.roomQuantity,
+        discountCode: data.discountCode,
+        userId // pass userId for limits check
+      });
+
+      // 3. Cập nhật trạng thái Booking thành CONFIRMED
+      const updatedBooking = await tx.booking.update({
+        where: { id: booking.id },
         data: {
-          userId,
-          roomId: holdData.roomId,
-          checkIn,
-          checkOut,
-          guests: holdData.guests,
-          roomQuantity: holdData.roomQuantity,
           totalPrice: priceBreakdown.totalAmount,
           status: 'CONFIRMED',
           paymentMethod: data.paymentMethod
         }
       });
 
-      // 3. Create Coupon Usage if applicable
+      // 4. Ghi nhận Coupon Usage nếu có
       if (priceBreakdown.couponId) {
         await tx.couponUsage.create({
           data: {
@@ -269,10 +274,7 @@ export class BookingsService {
         });
       }
 
-      // 4. Remove hold
-      await this.cacheManager.del(`hold:${data.holdId}`);
-
-      return booking;
+      return updatedBooking;
     });
   }
 
