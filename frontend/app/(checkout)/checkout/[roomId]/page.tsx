@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, Tag, CreditCard, AlertTriangle, Calendar, Users, AlertCircle } from 'lucide-react';
 import { useHoldTimer } from '@/hooks/use-hold-timer';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, calculateNights, formatDateVi } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
@@ -31,6 +31,12 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
   
   const [holdId, setHoldId] = useState<string>('');
   const [basePrice, setBasePrice] = useState<number>(3000000);
+  const [priceBreakdown, setPriceBreakdown] = useState<{
+    basePrice: number;
+    seasonalSurge?: number;
+    discountAmount?: number;
+    totalAmount: number;
+  } | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponError, setCouponError] = useState('');
@@ -42,6 +48,9 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
   const [holdError, setHoldError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Tính số đêm (Nights) chuẩn: 2 ngày 1 đêm = 1 đêm
+  const nights = calculateNights(checkIn, checkOut);
 
   // Tự động điều chỉnh ngày trả phòng nếu Check-in >= Check-out
   const handleCheckInChange = (newIn: string) => {
@@ -61,7 +70,9 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
     }
   };
 
-  const finalPrice = Math.max(0, basePrice * roomQuantity - discountAmount);
+  const finalPrice = priceBreakdown
+    ? priceBreakdown.totalAmount
+    : Math.max(0, basePrice * roomQuantity - discountAmount);
 
   // Tự động gọi API POST /api/v1/bookings/hold khi vào trang checkout hoặc đổi số lượng/ngày
   const initHoldSession = useCallback(async () => {
@@ -91,17 +102,22 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
         checkOut,
         guests: 2,
         roomQuantity,
+        discountCode: couponCode.trim().toUpperCase() || undefined,
       });
       const priceData = priceRes?.data || priceRes;
-      if (priceData?.totalAmount) {
-        setBasePrice(priceData.totalAmount);
+      if (priceData && typeof priceData.totalAmount === 'number') {
+        setPriceBreakdown(priceData);
+        setBasePrice(priceData.basePrice || priceData.totalAmount);
+        if (priceData.discountAmount !== undefined) {
+          setDiscountAmount(priceData.discountAmount);
+        }
       }
     } catch (err: any) {
       setHoldError(err?.message || 'Không thể khởi tạo phiên giữ phòng. Hãy thử chọn lại ngày hoặc số lượng.');
     } finally {
       setIsLoadingHold(false);
     }
-  }, [params?.roomId, checkIn, checkOut, roomQuantity]);
+  }, [params?.roomId, checkIn, checkOut, roomQuantity, couponCode]);
 
   useEffect(() => {
     initHoldSession();
@@ -111,7 +127,11 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
   const handleApplyCoupon = async () => {
     setCouponError('');
     setCouponSuccess('');
-    if (!couponCode.trim()) return;
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      setDiscountAmount(0);
+      return;
+    }
 
     setIsApplyingCoupon(true);
     try {
@@ -119,17 +139,26 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
         roomId: params?.roomId,
         checkIn,
         checkOut,
+        guests: 2,
         roomQuantity,
-        discountCode: couponCode.trim(),
+        discountCode: code,
       });
       const data = res?.data || res;
-      if (data?.discountAmount) {
-        setDiscountAmount(data.discountAmount);
-        setCouponSuccess(`Áp dụng mã giảm giá thành công! Giảm ${formatCurrency(data.discountAmount)}`);
+      if (data && typeof data.totalAmount === 'number') {
+        setPriceBreakdown(data);
+        if (data.discountAmount && data.discountAmount > 0) {
+          setDiscountAmount(data.discountAmount);
+          setCouponSuccess(`Áp dụng mã giảm giá thành công! Giảm ${formatCurrency(data.discountAmount)}`);
+        } else {
+          setDiscountAmount(0);
+          setCouponError('Mã giảm giá không hợp lệ hoặc không áp dụng cho đơn hàng này.');
+        }
       } else {
-        setCouponError('Mã giảm giá không hợp lệ hoặc không áp dụng cho đơn hàng này.');
+        setDiscountAmount(0);
+        setCouponError('Mã giảm giá không hợp lệ.');
       }
     } catch (err: any) {
+      setDiscountAmount(0);
       setCouponError(err?.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.');
     } finally {
       setIsApplyingCoupon(false);
@@ -310,13 +339,29 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
 
               <div className="space-y-2 text-xs text-gray-600">
                 <div className="flex justify-between">
+                  <span>Thời gian lưu trú</span>
+                  <span className="font-bold text-gray-900">{nights} đêm ({formatDateVi(checkIn)} - {formatDateVi(checkOut)})</span>
+                </div>
+                <div className="flex justify-between">
                   <span>Đơn giá phòng / đêm</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(basePrice)}</span>
+                  <span className="font-bold text-gray-900">
+                    {formatCurrency(
+                      nights > 0 && roomQuantity > 0
+                        ? (priceBreakdown?.basePrice || basePrice) / (nights * roomQuantity)
+                        : basePrice
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Số lượng phòng đặt</span>
                   <span className="font-bold text-gray-900">x {roomQuantity} phòng</span>
                 </div>
+                {priceBreakdown?.seasonalSurge && priceBreakdown.seasonalSurge > 0 ? (
+                  <div className="flex justify-between text-amber-700">
+                    <span>Phụ thu mùa cao điểm / cuối tuần</span>
+                    <span className="font-bold">+{formatCurrency(priceBreakdown.seasonalSurge)}</span>
+                  </div>
+                ) : null}
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-emerald-700">
                     <span>Giảm giá Mã Coupon</span>
@@ -339,8 +384,16 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
                     type="text"
                     placeholder="Nhập mã coupon"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="w-full text-xs uppercase px-3 py-2 border border-gray-300 rounded-lg outline-none"
+                    onChange={(e) => {
+                      const code = e.target.value.toUpperCase();
+                      setCouponCode(code);
+                      if (!code.trim()) {
+                        setDiscountAmount(0);
+                        setCouponSuccess('');
+                        setCouponError('');
+                      }
+                    }}
+                    className="w-full text-xs uppercase px-3 py-2 border border-gray-300 rounded-lg outline-none font-bold"
                   />
                   <Button variant="action" size="sm" onClick={handleApplyCoupon} type="button" isLoading={isApplyingCoupon}>
                     Áp dụng
@@ -367,8 +420,9 @@ export default function CheckoutPage({ params }: { params: { roomId: string } })
                 className="w-full font-bold text-slate-900 py-3 mt-4"
                 onClick={handleSubmitBooking}
                 isLoading={isSubmitting || isLoadingHold}
+                disabled={Boolean(holdError) || isSubmitting || isLoadingHold}
               >
-                Xác nhận Đặt phòng ({roomQuantity} phòng)
+                Xác nhận Đặt phòng ({roomQuantity} phòng · {nights} đêm)
               </Button>
             </div>
           </div>

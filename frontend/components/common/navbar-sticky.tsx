@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Globe, Menu, User, LogOut } from 'lucide-react';
+import { Globe, Menu, User, LogOut, Heart, Calendar } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -75,10 +75,19 @@ export function NavbarSticky() {
                       <p className="text-muted text-[11px] font-normal">{user.email}</p>
                     </div>
                     <Link
+                      href="/wishlist"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 hover:bg-surface text-main"
+                    >
+                      <Heart className="w-4 h-4 text-rausch fill-rausch/20" />
+                      Danh sách Yêu thích (Wishlist)
+                    </Link>
+                    <Link
                       href="/bookings"
                       onClick={() => setIsMenuOpen(false)}
-                      className="block px-4 py-2.5 hover:bg-surface"
+                      className="flex items-center gap-2 px-4 py-2.5 hover:bg-surface text-main"
                     >
+                      <Calendar className="w-4 h-4 text-main" />
                       Chuyến đi / Đặt phòng của tôi
                     </Link>
 

@@ -183,16 +183,35 @@ export default function UserBookingsPage() {
                         );
                       })()}
 
-                      {(booking.status === 'CHECKED_OUT' || booking.status === 'COMPLETED') && (
-                        <Button
-                          variant="yellow"
-                          size="sm"
-                          className="font-bold text-slate-900"
-                          onClick={() => setSelectedBookingToReview(booking)}
-                        >
-                          Viết Đánh giá
-                        </Button>
-                      )}
+                      {(booking.status === 'CHECKED_OUT' || booking.status === 'COMPLETED') && (() => {
+                        const hasReviewed =
+                          (Array.isArray(booking.reviews) && booking.reviews.length > 0) ||
+                          (Boolean(booking.reviews) && !Array.isArray(booking.reviews));
+
+                        if (hasReviewed) {
+                          return (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled
+                              className="bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed font-bold"
+                            >
+                              Đã đánh giá
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <Button
+                            variant="yellow"
+                            size="sm"
+                            className="font-bold text-slate-900"
+                            onClick={() => setSelectedBookingToReview(booking)}
+                          >
+                            Viết Đánh giá
+                          </Button>
+                        );
+                      })()}
 
                       {booking.status === 'CONFIRMED' && (
                         <Button

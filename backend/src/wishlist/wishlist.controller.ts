@@ -10,19 +10,17 @@ export class WishlistController {
 
   @Get()
   async getWishlist(@Request() req: any) {
-    const results = await this.wishlistService.getWishlist(req.user.id);
-    return { success: true, data: results };
+    return this.wishlistService.getWishlist(req.user.id);
   }
 
   @Post()
   async addWishlist(@Request() req: any, @Body() data: AddWishlistDto) {
-    const result = await this.wishlistService.addWishlist(req.user.id, data);
-    return { success: true, data: result };
+    return this.wishlistService.addWishlist(req.user.id, data);
   }
 
   @Delete(':hotelId')
   async removeWishlist(@Request() req: any, @Param('hotelId') hotelId: string) {
     await this.wishlistService.removeWishlist(req.user.id, hotelId);
-    return { success: true, message: 'Removed from wishlist' };
+    return { message: 'Removed from wishlist' };
   }
 }

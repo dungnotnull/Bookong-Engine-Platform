@@ -56,4 +56,6 @@ export interface Booking {
       coverImage?: string;
     };
   };
+  reviews?: any;
 }
+

@@ -25,7 +25,9 @@ export class WishlistService {
       }
     });
     
-    if (exists) throw new ConflictException('Hotel already in wishlist');
+    if (exists) {
+      return exists;
+    }
 
     return this.prisma.wishlist.create({
       data: {
@@ -36,12 +38,10 @@ export class WishlistService {
   }
 
   async removeWishlist(userId: string, hotelId: string) {
-    return this.prisma.wishlist.delete({
+    return this.prisma.wishlist.deleteMany({
       where: {
-        userId_hotelId: {
-          userId,
-          hotelId
-        }
+        userId,
+        hotelId
       }
     });
   }

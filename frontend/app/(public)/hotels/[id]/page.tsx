@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MapPin, Star, Share2, Heart, Wifi, Waves, Car, Wind, Grid } from 'lucide-react';
 import { RoomSelectionTable } from '@/components/hotel-detail/room-selection-table';
 import { ErrorState } from '@/components/common/error-state';
@@ -11,9 +11,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ImageGalleryModal } from '@/components/common/image-gallery-modal';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
-import { normalizeImageUrl } from '@/lib/formatters';
+import { normalizeImageUrl, calculateNights } from '@/lib/formatters';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 export default function HotelDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const searchParams = useSearchParams();
   const checkIn = searchParams.get('checkIn') || '';
   const checkOut = searchParams.get('checkOut') || '';
@@ -22,17 +25,13 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // Tính số đêm (Nights) từ checkIn và checkOut
-  let nights = 1;
-  if (checkIn && checkOut) {
-    const diffTime = Math.abs(new Date(checkOut).getTime() - new Date(checkIn).getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays > 0) nights = diffDays;
-  }
+  // Tính số đêm (Nights) chuẩn xác từ checkIn và checkOut (2 ngày 1 đêm = 1 đêm)
+  const nights = checkIn && checkOut ? calculateNights(checkIn, checkOut) : 1;
 
   const fetchHotel = useCallback(async () => {
     if (!params.id) return;
@@ -53,8 +52,26 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
       const data = hotelRes?.data || hotelRes;
       if (data && typeof data === 'object' && data.id) {
         setHotel(data);
+        if (data.isWishlisted !== undefined) {
+          setIsLiked(Boolean(data.isWishlisted));
+        }
       } else {
         setHotel(null);
+      }
+
+      // Kiểm tra trạng thái đã like từ API Wishlist nếu user đã đăng nhập
+      if (useAuthStore.getState().isAuthenticated) {
+        try {
+          const wishRes: any = await apiClient.get('/wishlist');
+          const wishRaw = wishRes?.data ?? wishRes;
+          const wishList = Array.isArray(wishRaw) ? wishRaw : Array.isArray(wishRaw?.data) ? wishRaw.data : [];
+          const isInWishlist = wishList.some(
+            (w: any) => w.hotelId === params.id || w.hotel?.id === params.id || w.id === params.id
+          );
+          setIsLiked(isInWishlist);
+        } catch {
+          // ignore
+        }
       }
 
       const revList = Array.isArray(reviewsRes?.data?.reviews)
@@ -79,19 +96,29 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
     fetchHotel();
   }, [fetchHotel]);
 
-  // Wishlist toggle handler for BUG-014
+  // Wishlist toggle handler
   const toggleWishlist = async () => {
-    if (!hotel) return;
+    if (!hotel || isTogglingWishlist) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setIsTogglingWishlist(true);
+
     try {
-      if (isLiked) {
-        await apiClient.delete(`/wishlist/${hotel.id}`);
-        setIsLiked(false);
-      } else {
+      if (nextLiked) {
         await apiClient.post('/wishlist', { hotelId: hotel.id });
-        setIsLiked(true);
+      } else {
+        await apiClient.delete(`/wishlist/${hotel.id}`);
       }
     } catch {
-      setIsLiked(!isLiked);
+      setIsLiked(!nextLiked);
+    } finally {
+      setIsTogglingWishlist(false);
     }
   };
 

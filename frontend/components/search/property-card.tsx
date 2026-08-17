@@ -1,24 +1,67 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MapPin, Sparkles, Check, Heart } from 'lucide-react';
 import { Hotel } from '@/types/hotel';
 import { formatCurrency, normalizeImageUrl } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 interface PropertyCardProps {
   hotel: Hotel;
 }
 
 export function PropertyCard({ hotel }: PropertyCardProps) {
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const searchParams = useSearchParams();
   const checkIn = searchParams.get('checkIn');
   const checkOut = searchParams.get('checkOut');
   const guests = searchParams.get('guests');
+
+  const [isLiked, setIsLiked] = useState<boolean>(Boolean((hotel as any).isWishlisted));
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
+
+  const isWishlistedProp = (hotel as any).isWishlisted;
+  React.useEffect(() => {
+    if (isWishlistedProp !== undefined) {
+      setIsLiked(Boolean(isWishlistedProp));
+    }
+  }, [isWishlistedProp]);
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (isTogglingWishlist) return;
+
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setIsTogglingWishlist(true);
+
+    try {
+      if (nextLiked) {
+        await apiClient.post('/wishlist', { hotelId: hotel.id });
+      } else {
+        await apiClient.delete(`/wishlist/${hotel.id}`);
+      }
+    } catch {
+      // Hoàn tác state nếu gọi API thất bại
+      setIsLiked(!nextLiked);
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
 
   const queryParams = new URLSearchParams();
   if (checkIn) queryParams.set('checkIn', checkIn);
@@ -51,8 +94,18 @@ export function PropertyCard({ hotel }: PropertyCardProps) {
             Chưa có ảnh
           </div>
         )}
-        <button className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-600 hover:text-red-500 transition-smooth">
-          <Heart className="w-4 h-4" />
+        <button
+          onClick={toggleWishlist}
+          disabled={isTogglingWishlist}
+          title={isLiked ? 'Bỏ lưu' : 'Lưu vào danh sách yêu thích'}
+          aria-label={isLiked ? 'Bỏ lưu' : 'Lưu vào danh sách yêu thích'}
+          className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white text-gray-600 shadow-md transition-all duration-200 active:scale-90 hover:scale-110 z-10"
+        >
+          <Heart
+            className={`w-4 h-4 transition-colors ${
+              isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'
+            }`}
+          />
         </button>
       </div>
 

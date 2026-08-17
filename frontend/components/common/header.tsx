@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, LogOut, Building, Globe } from 'lucide-react';
+import { User, LogOut, Building, Globe, Heart, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
 
@@ -93,6 +93,24 @@ export function Header() {
                         Role: {user.role}
                       </span>
                     </div>
+
+                    <Link
+                      href="/wishlist"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface text-booking-navy font-semibold"
+                    >
+                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                      Danh sách Yêu thích
+                    </Link>
+
+                    <Link
+                      href="/bookings"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface text-booking-navy font-semibold"
+                    >
+                      <Calendar className="w-4 h-4 text-booking-navy" />
+                      Lịch sử Đặt phòng
+                    </Link>
 
                     {(user.role === 'HOST' || user.role === 'ADMIN') && (
                       <Link

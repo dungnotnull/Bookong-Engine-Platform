@@ -19,16 +19,15 @@ export default function WishlistPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/v1/wishlist (Fix BUG-014)
+      // Gọi API GET /api/v1/wishlist
       const res: any = await apiClient.get('/wishlist');
-      const data = res?.data || res || [];
-      if (Array.isArray(data)) {
-        // Parse hotel objects from wishlist items if nested
-        const hotels = data.map((item: any) => item.hotel || item);
-        setWishlistItems(hotels);
-      } else {
-        setWishlistItems([]);
-      }
+      const raw = res?.data ?? res;
+      const data = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+      const hotels = data.map((item: any) => ({
+        ...(item.hotel || item),
+        isWishlisted: true,
+      }));
+      setWishlistItems(hotels);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh sách yêu thích. Vui lòng đăng nhập hoặc thử lại sau.');
       setWishlistItems([]);
@@ -44,7 +43,9 @@ export default function WishlistPage() {
   return (
     <div className="airbnb-container py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-main">Danh sách Chỗ nghỉ Đã lưu (Wishlist)</h1>
+        <h1 className="text-2xl font-black text-main">
+          Danh sách Chỗ nghỉ Đã lưu (Wishlist){wishlistItems.length > 0 ? ` · ${wishlistItems.length} chỗ nghỉ` : ''}
+        </h1>
         <p className="text-xs text-muted mt-1">Các khách sạn và villa ưa thích của bạn</p>
       </div>
 

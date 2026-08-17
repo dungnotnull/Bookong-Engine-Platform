@@ -11,6 +11,7 @@ import { Pagination } from '@/components/common/pagination';
 import { Hotel } from '@/types/hotel';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 function SearchResultsContent() {
   const router = useRouter();
@@ -52,7 +53,28 @@ function SearchResultsContent() {
       const data = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
       const meta = res?.meta || {};
 
-      setHotels(data);
+      // Đồng bộ danh sách yêu thích nếu người dùng đã đăng nhập
+      const wishHotelIds = new Set<string>();
+      if (useAuthStore.getState().isAuthenticated) {
+        try {
+          const wishRes: any = await apiClient.get('/wishlist');
+          const wishRaw = wishRes?.data ?? wishRes;
+          const wishList = Array.isArray(wishRaw) ? wishRaw : Array.isArray(wishRaw?.data) ? wishRaw.data : [];
+          wishList.forEach((w: any) => {
+            const hId = w.hotelId || w.hotel?.id || w.id;
+            if (hId) wishHotelIds.add(hId);
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      const mappedHotels = data.map((h: Hotel) => ({
+        ...h,
+        isWishlisted: wishHotelIds.has(h.id),
+      }));
+
+      setHotels(mappedHotels);
       setTotalPages(meta.totalPages || Math.ceil((data.length || 1) / LIMIT));
       setTotalItems(meta.total ?? data.length);
     } catch (err: any) {

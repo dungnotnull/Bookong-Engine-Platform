@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyListing } from '@/lib/dummy-data';
 import { Hotel } from '@/types/hotel';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 export type ListingItemType = PropertyListing | Hotel;
 
@@ -18,8 +20,17 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, className }: ListingCardProps) {
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState<boolean>(Boolean((listing as any).isWishlisted));
+
+  const isWishlistedProp = (listing as any).isWishlisted;
+  React.useEffect(() => {
+    if (isWishlistedProp !== undefined) {
+      setIsLiked(Boolean(isWishlistedProp));
+    }
+  }, [isWishlistedProp]);
 
   // Normalize data between PropertyListing and Hotel
   const title = 'title' in listing ? listing.title : listing.name;
@@ -54,6 +65,12 @@ export function ListingCard({ listing, className }: ListingCardProps) {
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
     const nextLiked = !isLiked;
     setIsLiked(nextLiked);
 
@@ -64,7 +81,7 @@ export function ListingCard({ listing, className }: ListingCardProps) {
         await apiClient.delete(`/wishlist/${listing.id}`);
       }
     } catch {
-      // Optimistic UI state kept
+      setIsLiked(!nextLiked);
     }
   };
 

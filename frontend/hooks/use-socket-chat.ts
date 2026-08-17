@@ -142,7 +142,7 @@ export function useSocketChat(bookingId: string) {
     };
   }, [bookingId, fetchMessageHistory]);
 
-  // Hàm gửi tin nhắn qua BroadcastChannel, Socket & API
+  // Hàm gửi tin nhắn qua Socket & fallback BroadcastChannel/API khi offline
   const sendMessage = async (text: string) => {
     if (!text.trim() || !bookingId) return;
 
@@ -152,6 +152,18 @@ export function useSocketChat(bookingId: string) {
     const senderId = currentUser?.id || (isHost ? 'host_user' : 'guest_user');
     const senderName = currentUser?.fullName || (isHost ? 'Host Chỗ Nghỉ' : 'Khách hàng');
 
+    // Nếu Socket đang Online: Gửi qua Socket và đợi Server trả về sự kiện newMessage (kèm UUID chuẩn từ Database)
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('sendMessage', {
+        bookingId,
+        content: text.trim(),
+        senderId,
+        senderRole,
+      });
+      return;
+    }
+
+    // Fallback khi Socket offline: Lưu local và phát sóng qua BroadcastChannel / API
     const newMsg: ChatMessage = {
       id: 'msg_' + Date.now(),
       bookingId,
@@ -163,23 +175,16 @@ export function useSocketChat(bookingId: string) {
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    // 1. Lưu & phát sóng realtime tới tất cả các tab/cửa sổ khác qua BroadcastChannel
     const updatedLocal = saveAndBroadcastChatMessage(newMsg);
     setMessages(updatedLocal);
 
-    // 2. Gửi qua Socket event nếu socket server đang online
-    if (socketRef.current && socketRef.current.connected) {
-      socketRef.current.emit('sendMessage', { bookingId, content: text, senderId, senderRole });
-    }
-
-    // 3. Gửi API lưu DB nếu backend đã có sẵn controller
     try {
-      await apiClient.post('/messages', { bookingId, content: text, senderRole });
+      await apiClient.post('/messages', { bookingId, content: text.trim(), senderRole });
     } catch {
       try {
-        await apiClient.post('/chat/messages', { bookingId, content: text, senderRole });
+        await apiClient.post('/chat/messages', { bookingId, content: text.trim(), senderRole });
       } catch {
-        // Ignored: đã được lưu & phát sóng qua realtime engine
+        // Ignored: đã được lưu qua realtime local engine
       }
     }
   };
