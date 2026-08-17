@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Building2, BedDouble, CalendarRange, CalendarDays, LogOut, Home, User } from 'lucide-react';
+import { LayoutDashboard, Building2, BedDouble, CalendarRange, CalendarDays, Ticket, LogOut, Home, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/use-auth-store';
 
 export function HostSidebar() {
@@ -27,6 +27,7 @@ export function HostSidebar() {
     { label: 'Quản lý Loại phòng', href: '/host/rooms', icon: BedDouble },
     { label: 'Đơn đặt phòng khách', href: '/host/bookings', icon: CalendarDays },
     { label: 'Cấu hình Dynamic Pricing', href: '/host/dynamic-pricing', icon: CalendarRange },
+    { label: 'Quản lý Mã giảm giá', href: '/host/coupons', icon: Ticket },
   ];
 
   const displayName = isMounted && user ? (user.fullName || user.email || 'Host Account') : 'Host Account';

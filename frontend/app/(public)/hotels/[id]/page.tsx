@@ -57,7 +57,15 @@ export default function HotelDetailPage({ params }: { params: { id: string } }) 
         setHotel(null);
       }
 
-      const revList = Array.isArray(reviewsRes?.data) ? reviewsRes.data : Array.isArray(reviewsRes) ? reviewsRes : [];
+      const revList = Array.isArray(reviewsRes?.data?.reviews)
+        ? reviewsRes.data.reviews
+        : Array.isArray(reviewsRes?.reviews)
+        ? reviewsRes.reviews
+        : Array.isArray(reviewsRes?.data)
+        ? reviewsRes.data
+        : Array.isArray(reviewsRes)
+        ? reviewsRes
+        : [];
       setReviews(revList);
     } catch (err: any) {
       setError(err?.message || 'Không thể tải thông tin chi tiết khách sạn. Vui lòng thử lại sau.');

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Building2, Users, LogOut, Home, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Building2, Users, Ticket, LogOut, Home, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '@/stores/use-auth-store';
 
 export function AdminSidebar() {
@@ -26,6 +26,7 @@ export function AdminSidebar() {
     { label: 'Phê duyệt Khách sạn', href: '/admin/hotels-approval', icon: CheckSquare },
     { label: 'Tất cả Khách sạn', href: '/admin/hotels', icon: Building2 },
     { label: 'Quản lý Người dùng & Admin', href: '/admin/users', icon: Users },
+    { label: 'Quản lý Mã giảm giá', href: '/admin/coupons', icon: Ticket },
   ];
 
   const displayName = isMounted && user ? (user.fullName || user.email || 'Admin') : 'Admin Account';

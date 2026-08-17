@@ -231,6 +231,7 @@ export default function UserBookingsPage() {
           onClose={() => setSelectedBookingToReview(null)}
           hotelId={selectedBookingToReview.room?.hotel?.id || selectedBookingToReview.room?.hotelId || selectedBookingToReview.hotelId || ''}
           bookingCode={selectedBookingToReview.code || selectedBookingToReview.id}
+          bookingId={selectedBookingToReview.id}
           onSuccess={() => {
             setSelectedBookingToReview(null);
             fetchBookings();

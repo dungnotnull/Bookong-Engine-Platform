@@ -11,10 +11,11 @@ interface ReviewFormModalProps {
   onClose: () => void;
   hotelId: string;
   bookingCode: string;
+  bookingId: string;
   onSuccess: () => void;
 }
 
-export function ReviewFormModal({ isOpen, onClose, hotelId, bookingCode, onSuccess }: ReviewFormModalProps) {
+export function ReviewFormModal({ isOpen, onClose, hotelId, bookingCode, bookingId, onSuccess }: ReviewFormModalProps) {
   const [cleanlinessRating, setCleanlinessRating] = useState(9);
   const [locationRating, setLocationRating] = useState(9);
   const [serviceRating, setServiceRating] = useState(9);
@@ -29,16 +30,17 @@ export function ReviewFormModal({ isOpen, onClose, hotelId, bookingCode, onSucce
     try {
       // Gọi API POST /api/v1/hotels/:hotelId/reviews (Ràng buộc BE: booking status phải là CHECKED_OUT)
       await apiClient.post(`/hotels/${hotelId}/reviews`, {
-        bookingCode,
+        bookingId,
         cleanlinessRating,
         locationRating,
         serviceRating,
         valueRating,
         comment,
       });
+      alert('Gửi đánh giá thành công! Cảm ơn bạn đã đóng góp ý kiến.');
       onSuccess();
-    } catch {
-      onSuccess();
+    } catch (err: any) {
+      alert(err?.message || 'Gửi đánh giá thất bại. Vui lòng kiểm tra lại điều kiện đặt phòng hoặc thử lại sau.');
     } finally {
       setIsLoading(false);
     }
