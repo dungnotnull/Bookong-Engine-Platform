@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from '../vector/vector.service';
 import { SearchQueryDto } from './dto/search.dto';
 import { buildPaginationMeta } from '../common/dto/pagination.dto';
+import { calculateDynamicNightlyPrice } from '../common/utils/pricing.util';
 
 @Injectable()
 export class SearchService {
@@ -18,8 +19,14 @@ export class SearchService {
     let vectorOrderBy = '';
     let vectorScore = '0 AS score';
     let qFilter = '';
-    const checkInDate = (checkIn ? new Date(checkIn) : new Date(new Date().setHours(14,0,0,0))).toISOString();
-    const checkOutDate = (checkOut ? new Date(checkOut) : new Date(new Date().setDate(new Date().getDate() + 1))).toISOString();
+    const ci = checkIn ? new Date(checkIn) : new Date(new Date().setHours(14,0,0,0));
+    ci.setHours(14, 0, 0, 0);
+    const checkInDate = ci.toISOString();
+
+    const co = checkOut ? new Date(checkOut) : new Date(new Date().setDate(new Date().getDate() + 1));
+    co.setHours(12, 0, 0, 0);
+    const checkOutDate = co.toISOString();
+
     const params: any[] = [checkInDate, checkOutDate, guests || 1];
 
     if (q) {
@@ -158,6 +165,32 @@ export class SearchService {
 
     const total = countResult[0]?.total || 0;
     
+    if (results.length > 0) {
+      const hotelIds = results.map(r => r.id);
+      const pricingRules = await this.prisma.pricingRule.findMany({
+        where: { hotelId: { in: hotelIds } }
+      });
+      
+      const checkInParsed = new Date(checkInDate);
+      const checkOutParsed = new Date(checkOutDate);
+
+      for (const hotel of results) {
+        const rulesForHotel = pricingRules.filter(r => r.hotelId === hotel.id);
+        if (rulesForHotel.length > 0 && hotel.rooms && Array.isArray(hotel.rooms)) {
+          for (const room of hotel.rooms) {
+            if (room.basePrice) {
+              room.basePrice = calculateDynamicNightlyPrice(
+                room.basePrice,
+                rulesForHotel,
+                checkInParsed,
+                checkOutParsed
+              );
+            }
+          }
+        }
+      }
+    }
+
     return {
       data: results,
       meta: buildPaginationMeta(total, page, limit)

@@ -24,6 +24,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
+    console.log(`[ChatGateway] Client trying to connect: ${client.id}`);
     try {
       const token = client.handshake.auth.token || client.handshake.headers['authorization']?.split(' ')[1];
       if (!token) throw new Error('No token');
@@ -34,13 +35,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.user = payload;
       // Join personal room for notifications
       client.join(`user_${payload.sub}`);
+      console.log(`[ChatGateway] Client connected: ${client.id}, User ID: ${payload.sub}`);
     } catch (error) {
+      console.error(`[ChatGateway] Connection error:`, error.message);
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    // console.log(`Client disconnected: ${client.id}`);
+    console.log(`[ChatGateway] Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('joinRoom')
@@ -57,7 +60,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { bookingId: string; content: string },
   ) {
-    if (!client.data.user) return;
+    console.log(`[ChatGateway] Received message from ${client.id} in booking ${data.bookingId}: ${data.content}`);
+    if (!client.data.user) {
+      console.log(`[ChatGateway] Unauthorized send attempt from ${client.id}`);
+      return;
+    }
     const { bookingId, content } = data;
     const senderId = client.data.user.sub; // user ID from JWT payload
 

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from '../vector/vector.service';
 import { CreateHotelDto, UpdateHotelDto } from './dto/hotel.dto';
 import { PaginationQueryDto, buildPaginationMeta } from '../common/dto/pagination.dto';
+import { calculateDynamicNightlyPrice } from '../common/utils/pricing.util';
 
 @Injectable()
 export class HotelsService {
@@ -162,6 +163,14 @@ export class HotelsService {
       ci = new Date();
       co = new Date(ci.getTime() + 24 * 60 * 60 * 1000);
     }
+    
+    // Set standard hotel times: Check-in at 14:00, Check-out at 12:00
+    ci.setHours(14, 0, 0, 0);
+    co.setHours(12, 0, 0, 0);
+
+    const pricingRules = await this.prisma.pricingRule.findMany({
+      where: { hotelId: id }
+    });
 
     const roomsWithAvailability = await Promise.all(
       hotel.rooms.map(async (room) => {
@@ -180,9 +189,17 @@ export class HotelsService {
         const availableQuantity = Math.max(0, room.quantity - bookedRooms);
 
         const amenities = room.roomAmenities?.map((ra) => ra.amenity) || [];
+        
+        const dynamicBasePrice = calculateDynamicNightlyPrice(
+          room.basePrice,
+          pricingRules,
+          ci,
+          co
+        );
 
         return {
           ...room,
+          basePrice: dynamicBasePrice,
           amenities,
           availableQuantity,
         };

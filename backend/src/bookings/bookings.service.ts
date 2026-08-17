@@ -37,7 +37,9 @@ export class BookingsService {
 
   async holdRoom(data: HoldRoomDto) {
     const checkIn = new Date(data.checkIn);
+    checkIn.setHours(14, 0, 0, 0);
     const checkOut = new Date(data.checkOut);
+    checkOut.setHours(12, 0, 0, 0);
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -63,7 +65,9 @@ export class BookingsService {
 
   async calculatePrice(data: CalculatePriceDto) {
     const checkIn = new Date(data.checkIn);
+    checkIn.setHours(14, 0, 0, 0);
     const checkOut = new Date(data.checkOut);
+    checkOut.setHours(12, 0, 0, 0);
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -138,7 +142,9 @@ export class BookingsService {
     if (!holdData) throw new BadRequestException('Hold expired or invalid');
 
     const checkIn = new Date(holdData.checkIn);
+    checkIn.setHours(14, 0, 0, 0);
     const checkOut = new Date(holdData.checkOut);
+    checkOut.setHours(12, 0, 0, 0);
 
     // Calculate final price
     const priceBreakdown = await this.calculatePrice({

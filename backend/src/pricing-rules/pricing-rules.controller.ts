@@ -13,7 +13,7 @@ export class PricingRulesController {
   @Roles(Role.HOST, Role.ADMIN)
   @Post()
   async create(@Request() req: any, @Body() data: CreatePricingRuleDto) {
-    const result = await this.pricingRulesService.create(req.user.userId, req.user.role, data);
+    const result = await this.pricingRulesService.create(req.user.id, req.user.role, data);
     return { success: true, data: result };
   }
 
@@ -27,14 +27,14 @@ export class PricingRulesController {
   @Roles(Role.HOST, Role.ADMIN)
   @Patch(':id')
   async update(@Param('id') id: string, @Request() req: any, @Body() data: UpdatePricingRuleDto) {
-    const result = await this.pricingRulesService.update(id, req.user.userId, req.user.role, data);
+    const result = await this.pricingRulesService.update(id, req.user.id, req.user.role, data);
     return { success: true, data: result };
   }
 
   @Roles(Role.HOST, Role.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.pricingRulesService.remove(id, req.user.userId, req.user.role);
+    await this.pricingRulesService.remove(id, req.user.id, req.user.role);
     return { success: true, message: 'Pricing rule deleted' };
   }
 }
