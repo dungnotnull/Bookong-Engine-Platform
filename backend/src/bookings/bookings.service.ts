@@ -261,6 +261,27 @@ export class BookingsService {
         throw new BadRequestException('Hold expired or invalid');
       }
 
+      // 1.5. KHOÁ DATABASE (Lock Room) VÀ DOUBLE-CHECK TRÁNH RACE CONDITION (DOUBLE BOOKING)
+      // Dùng Row-level lock trên bảng Room để đảm bảo không ai khác có thể confirm cùng lúc
+      await tx.$executeRaw`SELECT id FROM "Room" WHERE id = ${booking.roomId} FOR UPDATE`;
+
+      const overlapping = await tx.booking.aggregate({
+        _sum: { roomQuantity: true },
+        where: {
+          roomId: booking.roomId,
+          status: { in: ['CONFIRMED', 'CHECKED_IN'] }, // Chỉ check những đơn đã chốt
+          OR: [
+            { checkIn: { lt: booking.checkOut }, checkOut: { gt: booking.checkIn } }
+          ]
+        }
+      });
+
+      const room = await tx.room.findUnique({ where: { id: booking.roomId } });
+      const bookedRooms = overlapping._sum?.roomQuantity || 0;
+      if (!room || (room.quantity - bookedRooms) < booking.roomQuantity) {
+        throw new BadRequestException('Rất tiếc, phòng này vừa mới được người khác đặt thành công. Vui lòng chọn phòng khác.');
+      }
+
       // 2. Tính lại giá tiền cuối cùng (áp mã giảm giá nếu có)
       const priceBreakdown = await this.calculatePrice({
         roomId: booking.roomId,
