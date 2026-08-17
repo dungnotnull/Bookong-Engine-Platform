@@ -13,29 +13,26 @@ export class CancellationPoliciesController {
   @Roles(Role.HOST, Role.ADMIN)
   @Post()
   async create(@Request() req: any, @Body() data: CreateCancellationPolicyDto) {
-    const result = await this.policiesService.create(req.user.userId, req.user.role, data);
-    return { success: true, data: result };
+    return this.policiesService.create(req.user.id, req.user.role, data);
   }
 
   @Get()
   async findAll(@Query('hotelId') hotelId: string) {
-    const results = await this.policiesService.findAll(hotelId);
-    return { success: true, data: results };
+    return this.policiesService.findAll(hotelId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.HOST, Role.ADMIN)
   @Patch(':id')
   async update(@Param('id') id: string, @Request() req: any, @Body() data: UpdateCancellationPolicyDto) {
-    const result = await this.policiesService.update(id, req.user.userId, req.user.role, data);
-    return { success: true, data: result };
+    return this.policiesService.update(id, req.user.id, req.user.role, data);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.HOST, Role.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.policiesService.remove(id, req.user.userId, req.user.role);
-    return { success: true, message: 'Policy deleted' };
+    await this.policiesService.remove(id, req.user.id, req.user.role);
+    return { message: 'Policy deleted' };
   }
 }

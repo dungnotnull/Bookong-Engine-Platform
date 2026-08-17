@@ -35,11 +35,16 @@ export class RoomsService {
 
   async findAllInHotel(hotelId: string, checkIn?: string, checkOut?: string, includeInactive?: boolean) {
     let ci = checkIn ? new Date(checkIn) : new Date();
+    ci.setHours(14, 0, 0, 0);
+    
     let co = checkOut ? new Date(checkOut) : new Date(ci.getTime() + 24 * 60 * 60 * 1000);
+    co.setHours(12, 0, 0, 0);
 
     if (isNaN(ci.getTime()) || isNaN(co.getTime()) || ci >= co) {
       ci = new Date();
+      ci.setHours(14, 0, 0, 0);
       co = new Date(ci.getTime() + 24 * 60 * 60 * 1000);
+      co.setHours(12, 0, 0, 0);
     }
 
     const rooms = await this.prisma.room.findMany({

@@ -15,6 +15,7 @@ export class CouponsService {
     return this.prisma.coupon.create({
       data: {
         ...data,
+        code: data.code.toUpperCase(),
         hostId
       }
     });
@@ -50,7 +51,10 @@ export class CouponsService {
 
     return this.prisma.coupon.update({
       where: { id },
-      data
+      data: {
+        ...data,
+        code: data.code ? data.code.toUpperCase() : undefined
+      }
     });
   }
 

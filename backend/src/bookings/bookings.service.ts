@@ -50,7 +50,12 @@ export class BookingsService {
     const roomQuantity = data.roomQuantity || 1;
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Check availability with row level lock or just overlapping count
+      // 0. Tìm xem User này có đang Hold một phòng nào khác không
+      const existingHold = await tx.booking.findFirst({
+        where: { userId, status: 'PENDING_PAYMENT' }
+      });
+
+      // 1. Check availability
       const room = await tx.room.findUnique({ where: { id: data.roomId } });
       if (!room) throw new BadRequestException('Room not found');
       
@@ -59,6 +64,7 @@ export class BookingsService {
         where: {
           roomId: data.roomId,
           status: { in: ['CONFIRMED', 'PENDING_PAYMENT', 'CHECKED_IN'] },
+          id: existingHold ? { not: existingHold.id } : undefined, // Bỏ qua hold cũ của chính mình
           OR: [
             { checkIn: { lt: checkOut }, checkOut: { gt: checkIn } }
           ]
@@ -72,19 +78,35 @@ export class BookingsService {
       // 2. Calculate base price to store in DB
       const priceBreakdown = await this.calculatePrice({ ...data, userId });
       
-      // 3. Create PENDING_PAYMENT booking
-      const booking = await tx.booking.create({
-        data: {
-          userId,
-          roomId: data.roomId,
-          checkIn,
-          checkOut,
-          guests: data.guests,
-          roomQuantity,
-          totalPrice: priceBreakdown.totalAmount,
-          status: 'PENDING_PAYMENT'
-        }
-      });
+      // 3. Upsert PENDING_PAYMENT booking (Tránh spam)
+      let booking;
+      if (existingHold) {
+        booking = await tx.booking.update({
+          where: { id: existingHold.id },
+          data: {
+            roomId: data.roomId,
+            checkIn,
+            checkOut,
+            guests: data.guests,
+            roomQuantity,
+            totalPrice: priceBreakdown.totalAmount,
+            createdAt: new Date() // Reset the 15-minute cronjob timer
+          }
+        });
+      } else {
+        booking = await tx.booking.create({
+          data: {
+            userId,
+            roomId: data.roomId,
+            checkIn,
+            checkOut,
+            guests: data.guests,
+            roomQuantity,
+            totalPrice: priceBreakdown.totalAmount,
+            status: 'PENDING_PAYMENT'
+          }
+        });
+      }
 
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins (cron threshold)
       return { holdId: booking.id, expiresAt };
@@ -155,30 +177,30 @@ export class BookingsService {
         // 1. Status Check
         if (coupon.status !== 'ACTIVE') {
           isValid = false;
-          errorMessage = 'Coupon is not active';
+          errorMessage = 'Mã giảm giá này đã bị vô hiệu hóa hoặc tạm dừng';
         }
 
         // 2. Date Check
         const now = new Date();
         if (isValid && coupon.startDate && coupon.startDate > now) {
           isValid = false;
-          errorMessage = 'Coupon is not yet valid';
+          errorMessage = 'Mã giảm giá này chưa đến thời gian áp dụng';
         }
         if (isValid && coupon.expiryDate && coupon.expiryDate < now) {
           isValid = false;
-          errorMessage = 'Coupon has expired';
+          errorMessage = 'Mã giảm giá này đã hết hạn sử dụng';
         }
 
         // 3. Quantity Check
         if (isValid && coupon.quantity && coupon._count.usages >= coupon.quantity) {
           isValid = false;
-          errorMessage = 'Coupon usage limit reached';
+          errorMessage = 'Mã giảm giá này đã hết lượt sử dụng';
         }
 
         // 4. Host Scope Check
         if (isValid && coupon.hostId && coupon.hostId !== room.hotel.hostId) {
           isValid = false;
-          errorMessage = 'Coupon is not applicable for this hotel';
+          errorMessage = 'Mã giảm giá này không áp dụng cho khách sạn bạn đang chọn';
         }
 
         // 5. User Usage Limit Check
@@ -188,7 +210,7 @@ export class BookingsService {
           });
           if (userUsages >= coupon.usageLimitPerUser) {
             isValid = false;
-            errorMessage = 'You have exceeded the usage limit for this coupon';
+            errorMessage = `Bạn đã dùng hết số lượt cho phép của mã giảm giá này`;
           }
         }
 
@@ -197,7 +219,7 @@ export class BookingsService {
           const subtotal = basePriceTotal + surgeTotal;
           if (coupon.minSpend && subtotal < coupon.minSpend) {
             isValid = false;
-            errorMessage = `Minimum spend of ${coupon.minSpend} required`;
+            errorMessage = `Đơn hàng chưa đạt mức tối thiểu ${coupon.minSpend}đ để áp dụng mã này`;
           } else {
             validCouponId = coupon.id;
             if (coupon.discountType === 'PERCENTAGE') {
@@ -211,13 +233,11 @@ export class BookingsService {
           }
         }
 
-        if (!isValid && data.userId) {
-          // If userId is present, we might want to throw error to inform the frontend
-          // For now we just silently ignore or we can throw:
-          throw new BadRequestException(errorMessage);
+        if (!isValid) {
+          throw new BadRequestException(errorMessage || 'Mã giảm giá không hợp lệ');
         }
-      } else if (data.userId) {
-         throw new BadRequestException('Invalid coupon code');
+      } else {
+         throw new BadRequestException('Mã giảm giá không tồn tại');
       }
     }
 
@@ -348,6 +368,7 @@ export class BookingsService {
               hotel: true,
             },
           },
+          reviews: true,
         },
         orderBy: {
           createdAt: 'desc',
